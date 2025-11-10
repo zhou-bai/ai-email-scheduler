@@ -7,3 +7,6 @@
 测试依赖：uvicorn main:app --reload  
 打开http://127.0.0.1:8000  
 http://127.0.0.1:8000/docs 看 FastAPI 自动生成的 API 文档  
+
+# 前端启动
+npm run dev

@@ -4,7 +4,7 @@
     <el-header class="top-header">
       
       <div class="top-logo">
-        <span>AI 助手</span>
+        <span>AI Email Scheduler</span>
       </div>
 
       <el-menu
@@ -15,11 +15,11 @@
       >
         <el-menu-item index="/">
           <el-icon><HomeFilled /></el-icon>
-          <span>仪表盘</span>
+          <span>Dashboard</span>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <span>用户设置</span>
+          <span>UserSettings</span>
         </el-menu-item>
       </el-menu>
 
@@ -27,7 +27,7 @@
         <el-dropdown>
           <span class="el-dropdown-link">
             <el-avatar size="small" :icon="UserFilled" />
-            <span class="username"> 周新泉 (Chow)</span>
+            <span class="username"> 周</span>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
@@ -61,42 +61,63 @@ body {
   margin: 0;
   font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
 }
-
-.top-main-content {
-  background-color: #f0f2f5;
-  padding: 0 !important; /* 强制移除内边距 */
-}
-
 .app-layout-top {
   min-height: 100vh;
 }
 
-/* 1. 顶部 Header 样式 */
+/* 1. 顶部 Header 样式 (应用背景图) */
 .top-header {
   height: 60px;
   display: flex;
   align-items: center;
-  background-color: #fff; /* 顶部导航为白色 */
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   padding: 0 20px;
+
+  /* --- 新增：添加背景图片 --- */
+  background-image: url('/top-background.jpg');
+  background-size: cover;
+  /* (让导航栏的背景图和页面背景图在顶部对齐) */
+  background-position: center top; 
+  background-repeat: no-repeat;
+
+  border-bottom: 3px solid rgba(255, 255, 255, 0.853);
 }
+
+/* 2. Logo 样式 (字体改白) */
 .top-logo {
-  width: 200px; /* Logo 区域宽度 */
+  width: 200px;
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: #ffffff; /* <-- 改为白色 */
   display: flex;
   align-items: center;
 }
+
+/* 3. 菜单样式 (背景透明，字体改白) */
 .top-menu {
-  flex-grow: 1; /* 菜单占据中间所有剩余空间 */
-  border-bottom: none; /* 移除 el-menu 默认的底边框 */
+  flex-grow: 1;
+  border-bottom: none !important;
+  background-color: transparent !important; /* <-- 透明背景 */
 }
+/* 覆盖 el-menu 的字体颜色 */
+.top-menu .el-menu-item {
+  color: #EAEAEA !important; /* <-- 浅白色 */
+  background-color: transparent !important;
+}
+/* 悬停/激活时 */
+.top-menu .el-menu-item:hover {
+  color: #ffffff !important; /* <-- 纯白 */
+  background-color: rgba(255, 255, 255, 0.1) !important; /* <-- 轻微提亮 */
+}
+.top-menu .el-menu-item.is-active {
+  color: #ffffff !important; /* <-- 纯白 */
+  border-bottom: 2px solid #ffffff !important; /* <-- 白色下划线 */
+}
+
+/* 4. 用户信息 (字体改白) */
 .user-info {
-  width: 200px; /* 用户信息区域宽度 */
+  width: 200px;
   display: flex;
-  justify-content: flex-end; /* 靠右对齐 */
+  justify-content: flex-end;
 }
 .user-info .el-dropdown-link {
   cursor: pointer;
@@ -106,18 +127,12 @@ body {
 .user-info .username {
   margin-left: 8px;
   vertical-align: middle;
+  color: #ffffff; /* <-- 改为白色 */
 }
 
-/* 2. 主内容区样式 */
+/* 5. 主内容区 (移除 padding) */
 .top-main-content {
-  /* !!重要!! 
-    设置统一的浅灰色背景。
-    这个颜色会成为所有页面的“底色”。
-  */
   background-color: #f0f2f5;
-  /* 我们在这里设置全局 padding，
-    所以页面本身就不需要 padding 了。
-  */
-  padding: 24px;
+  padding: 0 !important; /* 保持为0，由子页面管理 */
 }
 </style>
