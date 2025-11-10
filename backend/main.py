@@ -2,9 +2,9 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.infrastructure.token_store import TokenStore
-from services.oauth import build_google_auth_url, exchange_code_for_tokens
-from services.gmail_client import fetch_new_emails, get_email_content, send_reply
-from services.calendar_client import create_event
+from backend.services.oauth import build_google_auth_url, exchange_code_for_tokens
+from backend.services.gmail_client import fetch_new_emails, get_email_content, send_reply
+from backend.services.calendar_client import create_event
 
 # 创建 FastAPI 应用实例
 app = FastAPI()
