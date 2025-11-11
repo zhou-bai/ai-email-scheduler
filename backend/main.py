@@ -28,20 +28,20 @@ def get_google_auth_url(user_id: str = Query(..., description="你的系统内�
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 新增：授权回调，交换令牌并保存
 @app.get("/api/v1/auth/google/callback")
 def google_oauth_callback(code: str, state: str = "", user_id: str = ""):
+    uid = user_id or (state.split(":")[0] if state else "")
+    if not uid:
+        raise HTTPException(status_code=400, detail="Missing user_id/state")
     try:
         access_token, refresh_token, expiry = exchange_code_for_tokens(code)
-        uid = user_id or (state.split(":")[0] if state else "")
-        if not uid:
-            raise HTTPException(status_code=400, detail="Missing user_id/state")
         store.save_tokens(uid, access_token, refresh_token or "", expiry)
         return {"success": True}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 新增：Gmail 测试接口
 @app.get("/api/v1/gmail/new")
 def api_gmail_new(user_id: str, max_results: int = 10):
     try:
