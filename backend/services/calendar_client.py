@@ -1,10 +1,12 @@
-from typing import Dict, Any, List
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
+from typing import Any, Dict, List
 
-from backend.config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, TOKEN_URI, SCOPES
-from backend.infrastructure.token_store import TokenStore
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+
+from app.core.config import settings
+from infrastructure.token_store import TokenStore
+
 
 def _get_credentials(user_id: str, store: TokenStore) -> Credentials:
     tokens = store.get_tokens(user_id)
@@ -13,17 +15,20 @@ def _get_credentials(user_id: str, store: TokenStore) -> Credentials:
     creds = Credentials(
         tokens.access_token,
         refresh_token=tokens.refresh_token,
-        token_uri=TOKEN_URI,
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        scopes=SCOPES,
+        token_uri=settings.GOOGLE_TOKEN_URI,
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        scopes=settings.GOOGLE_SCOPES,
     )
     if not creds.valid or creds.expired:
         creds.refresh(Request())
         store.update_tokens(user_id, access_token=creds.token, expiry=creds.expiry)
     return creds
 
-def create_event(user_id: str, store: TokenStore, event_details: Dict[str, Any]) -> Dict[str, Any]:
+
+def create_event(
+    user_id: str, store: TokenStore, event_details: Dict[str, Any]
+) -> Dict[str, Any]:
     creds = _get_credentials(user_id, store)
     service = build("calendar", "v3", credentials=creds)
     timezone = event_details.get("timezone", "Asia/Shanghai")
@@ -37,7 +42,14 @@ def create_event(user_id: str, store: TokenStore, event_details: Dict[str, Any])
     }
     return service.events().insert(calendarId="primary", body=body).execute()
 
-def find_free_slots(user_id: str, store: TokenStore, time_min: str, time_max: str, calendars: List[str] = None) -> Dict[str, Any]:
+
+def find_free_slots(
+    user_id: str,
+    store: TokenStore,
+    time_min: str,
+    time_max: str,
+    calendars: List[str] = None,
+) -> Dict[str, Any]:
     creds = _get_credentials(user_id, store)
     service = build("calendar", "v3", credentials=creds)
     items = [{"id": "primary"}] if not calendars else [{"id": c} for c in calendars]
