@@ -2,6 +2,7 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.infrastructure.token_store import TokenStore
+from backend.infrastructure.db_token_store import DBTokenStore
 from backend.services.oauth import build_google_auth_url, exchange_code_for_tokens
 from backend.services.gmail_client import fetch_new_emails, get_email_content, send_reply
 from backend.services.calendar_client import create_event
@@ -10,6 +11,7 @@ from backend.services.calendar_client import create_event
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 store = TokenStore()
+db_store = DBTokenStore()
 
 @app.get("/")
 def read_root():
@@ -36,6 +38,7 @@ def google_oauth_callback(code: str, state: str = "", user_id: str = ""):
     try:
         access_token, refresh_token, expiry = exchange_code_for_tokens(code)
         store.save_tokens(uid, access_token, refresh_token or "", expiry)
+        db_store.save_tokens(uid, access_token, refresh_token or "", expiry)
         return {"success": True}
     except HTTPException:
         raise
