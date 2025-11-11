@@ -143,3 +143,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# 数据库
+.env
