@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException
-
-from infrastructure.token_store import TokenStore
+from infrastructure.token_store import _store
 from services.calendar_client import create_event
 
 router = APIRouter(tags=["calendar"])
-store = TokenStore()
 
 
 @router.post("/events")
@@ -22,6 +20,6 @@ def api_calendar_create(
             "end_time": end_time,
             "timezone": timezone,
         }
-        return create_event(user_id, store, body)
+        return create_event(user_id, _store, body)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
