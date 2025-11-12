@@ -26,6 +26,35 @@ def get_or_create_user(db: Session, user_key: str) -> User:
     return user
 
 
+def get_or_create_user_by_email(
+    db: Session, email: str, full_name: Optional[str] = None
+) -> User:
+    """Find a user by email, create if not exists. Optionally update full_name.
+
+    This is preferred for OAuth callbacks where Google returns the verified email.
+    """
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        user = User(
+            email=email,
+            hashed_password="",
+            is_active=True,
+            role="user",
+            full_name=full_name,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+    # Update name if provided and different
+    if full_name and user.full_name != full_name:
+        user.full_name = full_name
+        db.commit()
+        db.refresh(user)
+    return user
+
+
 def get_latest_token(db: Session, user_id: int) -> Optional[OAuthToken]:
     return (
         db.query(OAuthToken)
