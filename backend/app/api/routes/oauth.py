@@ -54,7 +54,6 @@ def google_oauth_callback(
         )
 
         return OAuthCallbackResponse(
-            success=True,
             access_token=jwt_token,
             token_type="bearer",
             user_id=user.id,
