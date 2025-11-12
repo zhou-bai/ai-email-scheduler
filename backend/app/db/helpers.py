@@ -17,7 +17,7 @@ def get_user(db: Session, user_key: str) -> Optional[User]:
 def get_or_create_user(db: Session, user_key: str) -> User:
     user = get_user(db, user_key)
     if user is None and "@" in user_key:
-        user = User(email=user_key, hashed_password="", is_active=True, role="user")
+        user = User(email=user_key, hashed_password=None, is_active=True, role="user")
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -37,7 +37,7 @@ def get_or_create_user_by_email(
     if user is None:
         user = User(
             email=email,
-            hashed_password="",
+            hashed_password=None,
             is_active=True,
             role="user",
             full_name=full_name,
@@ -52,6 +52,50 @@ def get_or_create_user_by_email(
         user.full_name = full_name
         db.commit()
         db.refresh(user)
+    return user
+
+
+def get_or_create_user_by_google_sub(
+    db: Session,
+    google_sub: str,
+    email: str,
+    full_name: Optional[str] = None,
+) -> User:
+    user = db.query(User).filter(User.google_sub == google_sub).first()
+    if user is not None:
+        should_update = False
+        if user.email != email:
+            user.email = email
+            should_update = True
+        if full_name and user.full_name != full_name:
+            user.full_name = full_name
+            should_update = True
+
+        if should_update:
+            db.commit()
+            db.refresh(user)
+        return user
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is not None:
+        user.google_sub = google_sub
+        if full_name and user.full_name != full_name:
+            user.full_name = full_name
+        db.commit()
+        db.refresh(user)
+        return user
+
+    user = User(
+        google_sub=google_sub,
+        email=email,
+        hashed_password=None,
+        full_name=full_name,
+        is_active=True,
+        role="user",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 

@@ -18,8 +18,13 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    google_sub: Mapped[Optional[str]] = mapped_column(
+        String(255), unique=True, index=True, nullable=True
+    )
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    hashed_password: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, default=None
+    )
     full_name: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
     role: Mapped[str] = mapped_column(String(50), default="user")

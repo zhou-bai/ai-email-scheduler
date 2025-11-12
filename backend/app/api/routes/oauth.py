@@ -2,59 +2,65 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import create_access_token
+from app.schemas.auth import OAuthCallbackResponse, OAuthURLResponse
 from app.services import oauth
 
 router = APIRouter(tags=["oauth"])
 
 
-@router.get("/google/url")
-def get_google_auth_url(user_id: str = Query(..., description="Internal user ID")):
+@router.get("/google/url", response_model=OAuthURLResponse)
+def get_google_auth_url(
+    state: str = Query("", description="Optional state parameter"),
+) -> OAuthURLResponse:
     try:
-        url = oauth.build_auth_url(user_id)
-        return {"auth_url": url}
+        url = oauth.build_auth_url(user_id="", state=state or None)
+        return OAuthURLResponse(auth_url=url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/google/callback")
+@router.get("/google/callback", response_model=OAuthCallbackResponse)
 def google_oauth_callback(
     code: str,
     state: str = "",
-    user_id: str = "",
     db: Session = Depends(get_db),
-):
-    # user_id is optional; we'll prefer Google userinfo's email to identify/create user
+) -> OAuthCallbackResponse:
     try:
         access_token, refresh_token, expiry = oauth.exchange_code_for_tokens(code)
 
-        # Fetch user info from Google to reliably determine the user's email
         userinfo = oauth.get_user_info(access_token)
-        email = (userinfo or {}).get("email")
-
-        # Fallback: if no email from Google (rare), use provided user_id if it looks like an email
-        if not email and user_id and "@" in user_id:
-            email = user_id
-
-        # Last resort: try to parse from state prefix if it looks like an email
-        if not email and state:
-            candidate = state.split(":")[0]
-            if "@" in candidate:
-                email = candidate
-
-        if not email:
+        if not userinfo:
             raise HTTPException(
                 status_code=400,
-                detail="Unable to resolve user email from Google userinfo/user_id/state",
+                detail="Failed to fetch user info from Google",
             )
 
-        # Ensure user exists (create/update from Google data)
-        user = oauth.ensure_user_from_google(db, email=email, userinfo=userinfo)
+        try:
+            user = oauth.ensure_user_from_google_by_sub(db, userinfo)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
-        # Save tokens against this user
         oauth.save_user_tokens_by_user_id(
             db, user.id, access_token, refresh_token or "", expiry
         )
-        return {"success": True, "email": email, "user_id": user.id}
+
+        jwt_token = create_access_token(
+            subject=str(user.id),
+            additional_claims={
+                "email": user.email,
+                "role": user.role,
+            },
+        )
+
+        return OAuthCallbackResponse(
+            success=True,
+            access_token=jwt_token,
+            token_type="bearer",
+            user_id=user.id,
+            email=user.email,
+        )
+
     except HTTPException:
         raise
     except Exception as e:

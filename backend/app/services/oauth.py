@@ -1,6 +1,6 @@
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 import requests
@@ -15,6 +15,9 @@ from app.db import (
     update_token,
 )
 from app.db.helpers import get_or_create_user_by_email
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 def build_auth_url(user_id: str, state: Optional[str] = None) -> str:
@@ -159,3 +162,28 @@ def ensure_user_from_google(
         # userinfo keys differ between endpoints; try common ones
         full_name = userinfo.get("name") or userinfo.get("given_name")
     return get_or_create_user_by_email(db, email=email, full_name=full_name)
+
+
+def ensure_user_from_google_by_sub(db: Session, userinfo: Dict[str, Any]) -> "User":
+    from app.db.helpers import get_or_create_user_by_google_sub
+
+    google_sub = userinfo.get("sub")
+    email = userinfo.get("email")
+
+    if not google_sub:
+        raise ValueError("Missing required field in Google userinfo: sub")
+    if not email:
+        raise ValueError("Missing required field in Google userinfo: email")
+
+    full_name = (
+        userinfo.get("name")
+        or userinfo.get("given_name")
+        or userinfo.get("family_name")
+    )
+
+    return get_or_create_user_by_google_sub(
+        db=db,
+        google_sub=google_sub,
+        email=email,
+        full_name=full_name,
+    )
