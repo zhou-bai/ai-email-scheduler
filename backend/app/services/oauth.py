@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import secrets
 
 from app.core.config import settings
-from infrastructure.token_store import TokenStore
+from app.infrastructure.token_store import TokenStore
 
 
 def build_google_auth_url(user_id: str, state: Optional[str] = None) -> str:

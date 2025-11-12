@@ -3,9 +3,9 @@ from typing import Any, Dict, List
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from infrastructure.token_store import TokenStore
 
 from app.core.config import settings
+from app.infrastructure.token_store import TokenStore
 
 
 def _get_credentials(user_id: str, store: TokenStore) -> Credentials:

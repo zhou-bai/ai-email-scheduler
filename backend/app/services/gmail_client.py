@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 
 from app.core.config import settings
-from infrastructure.token_store import TokenStore
+from app.infrastructure.token_store import TokenStore
 
 
 def _get_credentials(user_id: str, store: TokenStore) -> Credentials:
