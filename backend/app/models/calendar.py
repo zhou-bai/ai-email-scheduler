@@ -18,8 +18,8 @@ class CalendarEvent(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
 
-    summary: Mapped[str] = mapped_column(String)
-    location: Mapped[str | None] = mapped_column(String, default=None)
+    summary: Mapped[str] = mapped_column(String(255))
+    location: Mapped[str | None] = mapped_column(String(255), default=None)
     description: Mapped[str | None] = mapped_column(Text, default=None)
     start_time: Mapped[datetime] = mapped_column(DateTime())
     end_time: Mapped[datetime] = mapped_column(DateTime())

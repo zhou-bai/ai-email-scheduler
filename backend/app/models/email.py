@@ -18,12 +18,12 @@ class Email(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
 
-    email_id: Mapped[str] = mapped_column(String, unique=True, index=True)
-    thread_id: Mapped[str | None] = mapped_column(String, index=True, default=None)
+    email_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    thread_id: Mapped[str | None] = mapped_column(String(255), index=True, default=None)
 
-    from_address: Mapped[str | None] = mapped_column(String, default=None)
-    to_address: Mapped[str | None] = mapped_column(String, default=None)
-    subject: Mapped[str | None] = mapped_column(String, default=None)
+    from_address: Mapped[str | None] = mapped_column(String(320), default=None)
+    to_address: Mapped[str | None] = mapped_column(String(512), default=None)
+    subject: Mapped[str | None] = mapped_column(String(512), default=None)
     received_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), index=True, default=None
     )

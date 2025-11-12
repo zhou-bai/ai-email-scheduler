@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
-from infrastructure.token_store import _store
-from services.calendar_client import create_event
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.services import calendar
 
 router = APIRouter(tags=["calendar"])
 
@@ -12,6 +14,7 @@ def api_calendar_create(
     start_time: str,
     end_time: str,
     timezone: str = "Asia/Shanghai",
+    db: Session = Depends(get_db),
 ):
     try:
         body = {
@@ -20,6 +23,6 @@ def api_calendar_create(
             "end_time": end_time,
             "timezone": timezone,
         }
-        return create_event(user_id, _store, body)
+        return calendar.create_event(db, user_id, body)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

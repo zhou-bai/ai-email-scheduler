@@ -55,6 +55,7 @@ class Settings(BaseSettings):
         default=[
             "https://www.googleapis.com/auth/gmail.readonly",
             "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/calendar",
             "https://www.googleapis.com/auth/calendar.events",
             "https://www.googleapis.com/auth/userinfo.email",
         ],
@@ -69,6 +70,28 @@ class Settings(BaseSettings):
     GOOGLE_AUTH_URI: str = Field(
         default="https://accounts.google.com/o/oauth2/v2/auth",
         description="Google OAuth authorization endpoint",
+    )
+
+    # Database Configuration
+    DB_HOST: str = Field(
+        default="127.0.0.1",
+        description="MySQL database host address",
+    )
+    DB_PORT: int = Field(
+        default=3306,
+        description="MySQL database port",
+    )
+    DB_USER: str = Field(
+        default="root",
+        description="MySQL database username",
+    )
+    DB_PASSWORD: str = Field(
+        default="",
+        description="MySQL database password",
+    )
+    DB_NAME: str = Field(
+        default="ai_email_assistant",
+        description="MySQL database name",
     )
 
 

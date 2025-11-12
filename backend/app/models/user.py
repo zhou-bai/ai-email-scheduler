@@ -18,11 +18,11 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String, unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String)
-    full_name: Mapped[Optional[str]] = mapped_column(String, default=None)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
-    role: Mapped[str] = mapped_column(String, default="user")
+    role: Mapped[str] = mapped_column(String(50), default="user")
 
     created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc)
