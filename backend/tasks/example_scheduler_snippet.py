@@ -1,57 +1,62 @@
-from backend.infrastructure.db_token_store import DBTokenStore
-from backend.services.gmail_client import fetch_new_emails, get_email_content
-from backend.services.calendar_client import create_event
-from backend.LLM import analyze_email
 from datetime import timedelta
 
-store = DBTokenStore()
+from app.core.database import SessionLocal
+from app.db import get_user
+from app.services import calendar, gmail
+from LLM import analyze_email
 
-# 假设任务筛选出要检查的用户，可能是邮箱或DB用户ID
-user_key = "kurasa907@gmail.com"  # 或 "123"（DB里的 users.id）
-tokens = store.get_tokens(user_key)
-if not tokens:
-    print("该用户在数据库中未找到令牌，跳过或记录待处理")
-else:
-    messages = fetch_new_emails(user_key, store, max_results=10)
-    if not messages:
-        print("没有未读邮件")
-    for m in messages:
-        content = get_email_content(user_key, store, m["id"])
-        is_spam, judge_reason, is_schedule, event, start_dt, end_dt = analyze_email(
-            content.get("body_text", ""),
-            sender=content.get("from"),
-            subject=content.get("subject"),
-        )
+db = SessionLocal()
 
-        if is_spam:
-            print(f"跳过垃圾邮件：{content.get('subject')}")
-            continue
+try:
+    user_key = "kurasa907@gmail.com"
 
-        print(f"邮件摘要：{judge_reason}")
+    user = get_user(db, user_key)
+    if not user:
+        print("No user found")
+    else:
+        messages = gmail.fetch_emails(db, user_key, max_results=10)
+        if not messages:
+            print("No unread emails")
 
-        if is_schedule and start_dt:
-            start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
-            end_dt = end_dt or (start_dt + timedelta(hours=1))
-            end_str = end_dt.strftime("%Y-%m-%dT%H:%M:%S")
+        for m in messages:
+            content = gmail.get_email(db, user_key, m["id"])
+            is_spam, judge_reason, is_schedule, event, start_dt, end_dt = analyze_email(
+                content.get("body_text", ""),
+                sender=content.get("from"),
+                subject=content.get("subject"),
+            )
 
-            summary = event or content.get("subject") or "自动识别日程"
-            details = {
-                "summary": summary,
-                "description": (
-                    f"来自邮件的自动日程\n"
-                    f"发件人：{content.get('from')}\n"
-                    f"主题：{content.get('subject')}\n"
-                    f"摘要：{judge_reason}"
-                ),
-                "start_time": start_str,
-                "end_time": end_str,
-                "timezone": "Asia/Shanghai",
-                "attendees": [],
-            }
-            try:
-                created = create_event(user_key, store, details)
-                print(f"已创建日程：{summary} -> {created.get('htmlLink')}")
-            except Exception as e:
-                print(f"创建日程失败：{e}")
-        else:
-            print("未识别到可创建的日程。")
+            if is_spam:
+                print(f"Skip spam: {content.get('subject')}")
+                continue
+
+            print(f"Email: {judge_reason}")
+
+            if is_schedule and start_dt:
+                start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
+                end_dt = end_dt or (start_dt + timedelta(hours=1))
+                end_str = end_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+                summary = event or content.get("subject") or "Auto event"
+                details = {
+                    "summary": summary,
+                    "description": (
+                        f"From email\n"
+                        f"From: {content.get('from')}\n"
+                        f"Subject: {content.get('subject')}\n"
+                        f"Summary: {judge_reason}"
+                    ),
+                    "start_time": start_str,
+                    "end_time": end_str,
+                    "timezone": "Asia/Shanghai",
+                    "attendees": [],
+                }
+                try:
+                    created = calendar.create_event(db, user_key, details)
+                    print(f"Created: {summary} -> {created.get('htmlLink')}")
+                except Exception as e:
+                    print(f"Failed: {e}")
+            else:
+                print("No event")
+finally:
+    db.close()

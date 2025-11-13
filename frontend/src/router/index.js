@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
+import AuthCallback from '../views/AuthCallback.vue'
 
 const routes = [
   {
@@ -25,8 +26,12 @@ const routes = [
     path: '/settings',
     name: 'UserSettings',
     // 这是你负责的另一个页面，我们用“懒加载” 
-    component: () => import('../views/UserSettings.vue'),
-    meta: { requiresAuth: true }
+    component: () => import('../views/UserSettings.vue')
+  },
+  {
+    path: '/auth/callback', // 必须和后端 oauth.py 里的 success_path 对应
+    name: 'AuthCallback',
+    component: AuthCallback
   }
 ]
 
