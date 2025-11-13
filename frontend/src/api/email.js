@@ -24,19 +24,6 @@ request.interceptors.request.use(
   }
 )
 
-// 3. 响应拦截器 (可选：处理 Token 过期自动登出)
-request.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      // 如果 Token 失效，清除本地存储并跳回登录页
-      localStorage.removeItem('token')
-      localStorage.removeItem('user_email')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
 
 // --- API 定义 ---
 
