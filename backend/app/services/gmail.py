@@ -11,7 +11,9 @@ from app.core.config import settings
 from app.services.oauth import get_fresh_token
 
 
-def fetch_emails(db: Session, user_id: str, max_results: int = 10) -> List[Dict[str, Any]]:
+def fetch_emails(
+    db: Session, user_id: str, max_results: int = 10
+) -> List[Dict[str, Any]]:
     creds = _get_creds(db, user_id)
     service = build("gmail", "v1", credentials=creds)
     result = (
@@ -26,7 +28,12 @@ def fetch_emails(db: Session, user_id: str, max_results: int = 10) -> List[Dict[
 def get_email(db: Session, user_id: str, email_id: str) -> Dict[str, Any]:
     creds = _get_creds(db, user_id)
     service = build("gmail", "v1", credentials=creds)
-    msg = service.users().messages().get(userId="me", id=email_id, format="full").execute()
+    msg = (
+        service.users()
+        .messages()
+        .get(userId="me", id=email_id, format="full")
+        .execute()
+    )
 
     headers = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
     body_text = _extract_body(msg.get("payload", {}))
@@ -43,12 +50,21 @@ def get_email(db: Session, user_id: str, email_id: str) -> Dict[str, Any]:
     }
 
 
-def reply_email(db: Session, user_id: str, email_id: str, content: str) -> Dict[str, Any]:
+def reply_email(
+    db: Session, user_id: str, email_id: str, content: str
+) -> Dict[str, Any]:
     creds = _get_creds(db, user_id)
     service = build("gmail", "v1", credentials=creds)
-    original = service.users().messages().get(userId="me", id=email_id, format="full").execute()
+    original = (
+        service.users()
+        .messages()
+        .get(userId="me", id=email_id, format="full")
+        .execute()
+    )
 
-    headers = {h["name"]: h["value"] for h in original.get("payload", {}).get("headers", [])}
+    headers = {
+        h["name"]: h["value"] for h in original.get("payload", {}).get("headers", [])
+    }
     to_addr = headers.get("From")
     subject = headers.get("Subject", "(no subject)")
     message_id = headers.get("Message-Id") or headers.get("Message-ID")
@@ -90,5 +106,7 @@ def _extract_body(payload: Dict[str, Any]) -> str:
         if part.get("mimeType") == "text/plain":
             d = part.get("body", {}).get("data")
             if d:
-                return urlsafe_b64decode(d.encode("utf-8")).decode("utf-8", errors="ignore")
+                return urlsafe_b64decode(d.encode("utf-8")).decode(
+                    "utf-8", errors="ignore"
+                )
     return ""
