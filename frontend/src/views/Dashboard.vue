@@ -8,8 +8,12 @@
         <span class="text-large font-600 mr-3"> AI 助手活动中心 </span>
       </template>
       <template #extra>
-        <el-button type="primary" :icon="Refresh" circle :loading="loading" @click="handleRefresh" />
-      </template>
+      <el-button type="warning" @click="connectGoogle">
+        <el-icon><Link /></el-icon> 连接 Google 账号
+      </el-button>
+      
+      <el-button type="primary" :icon="Refresh" circle @click="handleRefresh" />
+    </template>
     </el-page-header>
 
     <el-divider />
@@ -70,6 +74,8 @@ import { Refresh, Message, Calendar } from '@element-plus/icons-vue'
 // 引入 API
 import { getEmails, processEmails } from '../api/email.js'
 import { getCalendarEvents } from '../api/calendar.js'
+import { getGoogleAuthUrl } from '../api/auth.js'
+
 
 const activeView = ref('summaries')
 const loading = ref(false)
@@ -144,6 +150,20 @@ const handleRefresh = async () => {
 // 当用户在 EventCard 点击确认后，前端直接把该条目移除，无需刷新整个列表
 const removeEventFromList = (id) => {
   pendingEvents.value = pendingEvents.value.filter(e => e.id !== id)
+}
+
+const connectGoogle = async () => {
+  try {
+    // 1. 请求后端，拿到 Google 的授权页面 URL
+    const res = await getGoogleAuthUrl()
+    const authUrl = res.data.auth_url
+    
+    // 2. 让浏览器直接跳转到 Google
+    window.location.href = authUrl
+  } catch (error) {
+    console.error('无法获取授权链接', error)
+    ElMessage.error('无法连接至 Google')
+  }
 }
 
 onMounted(() => {

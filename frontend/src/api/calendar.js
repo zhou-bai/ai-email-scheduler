@@ -1,22 +1,37 @@
+// src/api/calendar.js
 import axios from 'axios'
 
 const request = axios.create({
-  baseURL: '/api/v1', // 配合 vite proxy
+  baseURL: '', 
   timeout: 10000
 })
 
-// 1. 获取待办事件列表 (GET /api/v1/calendar-events/)
+// 拦截器
+request.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// --- API 定义 ---
+
 export const getCalendarEvents = (params) => {
-  return request.get('/calendar-events/', { params })
+  return request.get('/api/v1/calendar-events/', { params })
 }
 
-// 2. 确认事件 (POST /api/v1/calendar-events/{event_id}/confirm)
-// 这个接口会把事件推送到 Google 日历并删除本地记录
 export const confirmCalendarEvent = (eventId) => {
-  return request.post(`/calendar-events/${eventId}/confirm`)
+  return request.post(`/api/v1/calendar-events/${eventId}/confirm`)
 }
 
-// 3. (可选) 创建事件 - 如果你想手动创建的话
 export const createCalendarEvent = (data) => {
-  return request.post('/calendar-events/', data)
+  return request.post('/api/v1/calendar-events/', data)
 }
+
+export default request
