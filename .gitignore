@@ -147,3 +147,6 @@ venv/
 .idea/
 .vscode/
 *.db
+
+mysql_data/
+.DS_Store
