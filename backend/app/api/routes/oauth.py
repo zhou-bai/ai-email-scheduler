@@ -20,14 +20,13 @@ def get_google_auth_url(
     state: str = Query("", description="Optional state parameter"),
 ) -> OAuthURLResponse:
     try:
-        logger.info("Building Google OAuth URL", extra={"has_state": bool(state)})
+        logger.info(f"Building Google OAuth URL, has_state: {bool(state)}")
         url = oauth.build_auth_url(user_id="", state=state or None)
         logger.debug("Google OAuth URL built successfully")
         return OAuthURLResponse(auth_url=url)
     except Exception as e:
         logger.error(
-            "Failed to build Google OAuth URL",
-            extra={"has_state": bool(state)},
+            f"Failed to build Google OAuth URL, has_state: {bool(state)}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e))
@@ -40,11 +39,11 @@ def google_oauth_callback(
     db: Session = Depends(get_db),
 ) -> RedirectResponse:
     try:
-        logger.info("Handling Google OAuth callback", extra={"has_state": bool(state)})
+        logger.info(f"Handling Google OAuth callback, has_state: {bool(state)}")
         access_token, refresh_token, expiry = oauth.exchange_code_for_tokens(code)
         logger.debug(
             "Exchanged code for tokens",
-            extra={"has_refresh": bool(refresh_token), "has_expiry": bool(expiry)},
+            f"has_refresh: {bool(refresh_token)}, has_expiry: {bool(expiry)}",
         )
 
         userinfo = oauth.get_user_info(access_token)
@@ -59,8 +58,7 @@ def google_oauth_callback(
             user = oauth.ensure_user_from_google_by_sub(db, userinfo)
         except ValueError as e:
             logger.error(
-                "Invalid Google userinfo payload",
-                extra={"keys": list(userinfo.keys())},
+                f"Invalid Google userinfo payload, keys: {list(userinfo.keys())}",
                 exc_info=True,
             )
             raise HTTPException(status_code=400, detail=str(e))
@@ -69,8 +67,7 @@ def google_oauth_callback(
             db, user.id, access_token, refresh_token or "", expiry
         )
         logger.info(
-            "Saved OAuth tokens for user",
-            extra={"user_id": user.id, "email": user.email},
+            f"Saved OAuth tokens for user, user_id: {user.id}, email: {user.email}"
         )
 
         jwt_token = create_access_token(
@@ -99,8 +96,7 @@ def google_oauth_callback(
             (parts.scheme, parts.netloc, parts.path, parts.query, fragment)
         )
         logger.info(
-            "Redirecting to frontend after OAuth",
-            extra={"destination": f"{frontend_base}{success_path}", "user_id": user.id},
+            f"Redirecting to frontend after OAuth, destination: {frontend_base}{success_path}, user_id: {user.id}",
         )
         return RedirectResponse(url=redirect_url, status_code=302)
 
@@ -119,7 +115,7 @@ def google_oauth_callback(
         frontend_base = settings.FRONTEND_HOST.rstrip("/")
         logger.error(
             "Unexpected error during OAuth callback",
-            extra={"has_state": bool(state)},
+            f"has_state: {bool(state)}",
             exc_info=True,
         )
         dest_base = urljoin(frontend_base + "/", error_path.lstrip("/"))
