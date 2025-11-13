@@ -8,14 +8,13 @@
         <span class="text-large font-600 mr-3"> AI 助手活动中心 </span>
       </template>
       <template #extra>
-        <el-button type="primary" :icon="Refresh" circle @click="refreshData" />
+        <el-button type="primary" :icon="Refresh" circle :loading="loading" @click="handleRefresh" />
       </template>
     </el-page-header>
 
     <el-divider />
 
     <el-tabs v-model="activeView" type="border-card" class="dashboard-tabs">
-
       <el-tab-pane name="summaries">
         <template #label>
           <span class="tab-label">
@@ -24,19 +23,9 @@
             <el-badge :value="emailSummaries.length" class="tab-badge" />
           </span>
         </template>
-
-        <el-empty 
-          v-if="emailSummaries.length === 0" 
-          description="暂无邮件摘要" 
-          :image-size="100" 
-        />
-        
+        <el-empty v-if="emailSummaries.length === 0" description="暂无邮件数据" :image-size="100" />
         <div v-else class="summary-list-container">
-          <EmailSummary
-            v-for="summary in emailSummaries"
-            :key="summary.id"
-            :summary="summary"
-          />
+          <EmailSummary v-for="summary in emailSummaries" :key="summary.id" :summary="summary" />
         </div>
       </el-tab-pane>
 
@@ -49,11 +38,7 @@
           </span>
         </template>
         
-        <el-empty 
-          v-if="pendingEvents.length === 0" 
-          description="暂无待办事件" 
-          :image-size="100"
-        />
+        <el-empty v-if="pendingEvents.length === 0" description="暂无待办事件" :image-size="100" />
 
         <div v-else class="event-list-container">
           <el-row :gutter="20">
@@ -63,103 +48,129 @@
               :xs="24" :sm="12" :md="8"
               style="margin-bottom: 20px;"
             >
-              <EventCard :event="event" />
+              <EventCard 
+                :event="event" 
+                @confirmed="removeEventFromList"
+              />
             </el-col>
           </el-row>
         </div>
       </el-tab-pane>
-
     </el-tabs>
-
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import EventCard from '../components/EventCard.vue'
 import EmailSummary from '../components/EmailSummary.vue'
-import { mockEvents, mockSummaries } from '../data/mockData.js'
 import { Refresh, Message, Calendar } from '@element-plus/icons-vue'
 
-// 新增: 用于控制当前激活的标签页
-const activeView = ref('summaries') // 默认显示“邮件摘要”
+// 引入 API
+import { getEmails, processEmails } from '../api/email.js'
+import { getCalendarEvents } from '../api/calendar.js'
 
-const pendingEvents = ref(mockEvents)
-const emailSummaries = ref(mockSummaries)
+const activeView = ref('summaries')
+const loading = ref(false)
+const pendingEvents = ref([])
+const emailSummaries = ref([])
 
-const refreshData = () => {
-  alert('（模拟）正在刷新数据...')
+// 辅助函数：从 ISO 时间字符串提取日期和时间
+const parseDateTime = (isoStr) => {
+  if (!isoStr) return { date: 'N/A', time: 'N/A' }
+  const d = new Date(isoStr)
+  return {
+    date: d.toLocaleDateString(),
+    time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
 }
 
+// 获取所有数据
+const fetchData = async () => {
+  try {
+    // 1. 获取邮件
+    const emailRes = await getEmails({ limit: 20 })
+    emailSummaries.value = emailRes.data.map(item => ({
+      id: item.id,
+      sender: item.from_address,
+      subject: item.subject,
+      summary: item.snippet || item.body_text,
+      receivedAt: item.received_at,
+      hasEvent: false 
+    }))
+
+    // 2. 获取待办事件 (新增)
+    const eventRes = await getCalendarEvents({ limit: 50 })
+    
+    // 数据映射：Backend -> Frontend Component
+    pendingEvents.value = eventRes.data.map(evt => {
+      const { date, time } = parseDateTime(evt.start_time)
+      return {
+        id: evt.id,          // 必须保留 ID 用于确认接口
+        title: evt.summary,  // 映射 summary -> title
+        location: evt.location || '线上 / 未定',
+        attendees: evt.attendees ? [evt.attendees] : [], // 后端是字符串，前端v-for需要数组
+        date: date,
+        time: time,
+        rawStartTime: evt.start_time,
+        rawEndTime: evt.end_time
+      }
+    })
+
+  } catch (error) {
+    console.error('数据加载失败:', error)
+    ElMessage.error('获取数据失败')
+  }
+}
+
+const handleRefresh = async () => {
+  loading.value = true
+  try {
+    const res = await processEmails() // 触发 AI 分析
+    if (res.data.success) {
+      ElMessage.success(`分析完成，生成了 ${res.data.created_events_count} 个新事件`)
+      await fetchData() // 重新拉取最新数据
+    } else {
+      ElMessage.warning('处理未完全成功')
+    }
+  } catch (error) {
+    ElMessage.error('刷新失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 当用户在 EventCard 点击确认后，前端直接把该条目移除，无需刷新整个列表
+const removeEventFromList = (id) => {
+  pendingEvents.value = pendingEvents.value.filter(e => e.id !== id)
+}
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>
+/* 保持你的样式不变 */
 .dashboard {
-  /* 使用 /my-background.jpg 
-    (Vite 会自动将其解析为 public 文件夹中的文件) 
-  */
   background-image: url('/my-background.jpg');
-  
-  /* 确保图片覆盖整个区域 */
   background-size: cover;
-  
-  /* 图片居中显示 */
   background-position: center;
-  
-  /* 防止图片平铺 */
   background-repeat: no-repeat;
-  
-  /* !!重要!! 
-    我们之前在 App.vue 中设置了全局 padding，
-    但由于 .dashboard 现在是 router-view 的根元素，
-    我们需要自己在这里重新声明 padding。
-  */
   padding: 24px;
-  
-  /* 确保它至少填满内容区的高度 
-    (100vh - 60px 顶部导航栏高度)
-  */
   min-height: calc(100vh - 60px);
-  box-sizing: border-box; /* 确保 padding 不会撑破高度 */
+  box-sizing: border-box;
 }
-
-/* 你之前为 .dashboard-tabs 添加的透明度
-  现在会产生“毛玻璃”效果，透出背景图片！
-*/
 .dashboard-tabs {
   min-height: 500px;
-  opacity: 0.9;
+  opacity: 0.95;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-
-  /* 新增: 圆角 */
   border-radius: 12px;
-
   overflow: hidden; 
 }
-
-/* 标签页标题样式 */
-.tab-label {
-  display: flex;
-  align-items: center;
-  gap: 8px; /* 图标和文字的间距 */
-}
-.tab-badge {
-  margin-left: 8px;
-}
-
-/* 摘要列表容器 (移除边框，因为tabs已有) */
-.summary-list-container {
-  /* 之前在EmailSummary.vue中设置了边框，这里不需要额外样式 */
-}
-
-:deep(.el-page-header__title strong) {
-  color: #ffffff; /* 仪表盘 -> 白色 */
-}
-
-/* 使用 :deep() 穿透 el-page-header 组件，
-  将其内部 content 插槽中的 span 标签字体变为白色
-*/
-:deep(.el-page-header__content span) {
-  color: #ffffff; /* AI助手活动中心 -> 白色 */
-}
+.tab-label { display: flex; align-items: center; gap: 8px; }
+.tab-badge { margin-left: 8px; }
+:deep(.el-page-header__title strong) { color: #ffffff; }
+:deep(.el-page-header__content span) { color: #ffffff; }
 </style>
