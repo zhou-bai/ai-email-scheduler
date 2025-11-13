@@ -1,7 +1,7 @@
 <template>
   <el-container class="app-layout-top">
     
-    <el-header class="top-header">
+    <el-header v-if="!hideHeader" class="top-header">
       
       <div class="top-logo">
         <span>AI Email Scheduler</span>
@@ -32,14 +32,21 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item divided>退出登录</el-dropdown-item>
+              <el-dropdown-item divided @click="handleLogout">
+                退出登录
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </div>
     </el-header>
 
-    <el-main class="top-main-content">
+    <el-main
+      :class="[
+        'top-main-content',
+        { 'no-header-content': hideHeader }
+      ]"
+    >
       <router-view></router-view>
     </el-main>
 
@@ -47,13 +54,41 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-// 确保所有图标都已导入
-import { HomeFilled, Setting, UserFilled, Cpu } from '@element-plus/icons-vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { HomeFilled, Setting, UserFilled } from '@element-plus/icons-vue'
+import { getToken, logout as apiLogout } from './api'
 
 const route = useRoute()
+const router = useRouter()
+
+const isAuthed = ref(Boolean(getToken()))
+
+const handleAuthChange = () => {
+  isAuthed.value = Boolean(getToken())
+}
+
+onMounted(() => {
+  window.addEventListener('auth-change', handleAuthChange)
+  handleAuthChange()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('auth-change', handleAuthChange)
+})
+
 const activeRoute = computed(() => route.path)
+const hideHeader = computed(() => !isAuthed.value)
+
+const handleLogout = async () => {
+  try {
+    await apiLogout()
+  } catch {
+    // ignore logout error
+  } finally {
+    router.push('/login')
+  }
+}
 </script>
 
 <style>
@@ -134,5 +169,10 @@ body {
 .top-main-content {
   background-color: #f0f2f5;
   padding: 0 !important; /* 保持为0，由子页面管理 */
+}
+
+.no-header-content {
+  background: transparent;
+  min-height: 100vh;
 }
 </style>
