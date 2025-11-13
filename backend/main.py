@@ -1,76 +1,53 @@
-# 模块顶部增加导入与初始化
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from backend.infrastructure.token_store import TokenStore
-from backend.infrastructure.db_token_store import DBTokenStore
-from backend.services.oauth import build_google_auth_url, exchange_code_for_tokens
-from backend.services.gmail_client import fetch_new_emails, get_email_content, send_reply
-from backend.services.calendar_client import create_event
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-# 创建 FastAPI 应用实例
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-store = TokenStore()
-db_store = DBTokenStore()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.main import api_router
+from app.api.middleware import LoggingMiddleware
+from app.core.config import settings
+from app.core.database import init_db
+from app.core.logging_config import get_logger, setup_logging
+
+setup_logging(
+    log_level=settings.LOG_LEVEL,
+    log_dir=Path(settings.LOG_DIR),
+    app_name="email_agent",
+)
+logger = get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Initializing database tables...")
+    init_db()
+    logger.info("Database tables initialized successfully")
+    yield
+    logger.info("Shutting down...")
+
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION,
+    description="AI Powered Email Scheduling and Management API",
+    docs_url="/docs",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(LoggingMiddleware)
+
+app.include_router(api_router, prefix="/api/v1")
+
 
 @app.get("/")
 def read_root():
     return {"message": "AI Email and Scheduling Assistant - Backend API"}
-
-@app.get("/api/v1/status")
-def get_status():
-    return {"status": "running"}
-
-# 新增：获取授权链接
-@app.get("/api/v1/auth/google/url")
-def get_google_auth_url(user_id: str = Query(..., description="你的系统内部用户ID")):
-    try:
-        url = build_google_auth_url(user_id)
-        return {"auth_url": url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/v1/auth/google/callback")
-def google_oauth_callback(code: str, state: str = "", user_id: str = ""):
-    uid = user_id or (state.split(":")[0] if state else "")
-    if not uid:
-        raise HTTPException(status_code=400, detail="Missing user_id/state")
-    try:
-        access_token, refresh_token, expiry = exchange_code_for_tokens(code)
-        store.save_tokens(uid, access_token, refresh_token or "", expiry)
-        db_store.save_tokens(uid, access_token, refresh_token or "", expiry)
-        return {"success": True}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/v1/gmail/new")
-def api_gmail_new(user_id: str, max_results: int = 10):
-    try:
-        return {"messages": fetch_new_emails(user_id, store, max_results)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/v1/gmail/{message_id}")
-def api_gmail_get(user_id: str, message_id: str):
-    try:
-        return get_email_content(user_id, store, message_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/v1/gmail/{message_id}/reply")
-def api_gmail_reply(user_id: str, message_id: str, content: str):
-    try:
-        return send_reply(user_id, store, message_id, content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# 新增：Calendar 创建事件
-@app.post("/api/v1/calendar/events")
-def api_calendar_create(user_id: str, summary: str, start_time: str, end_time: str, timezone: str = "Asia/Shanghai"):
-    try:
-        body = {"summary": summary, "start_time": start_time, "end_time": end_time, "timezone": timezone}
-        return create_event(user_id, store, body)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

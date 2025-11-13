@@ -1,11 +1,13 @@
+import warnings
+
 import pytest
 from fastapi.testclient import TestClient
 
-import backend.main as main
-from backend.infrastructure.token_store import TokenStore
+import main as main
+from app.infrastructure.token_store import TokenStore
 
-import warnings
 warnings.filterwarnings("ignore", message="Do not expect file_or_dir in Namespace")
+
 
 @pytest.fixture
 def client():

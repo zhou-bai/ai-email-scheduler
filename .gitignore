@@ -144,5 +144,9 @@ __pycache__/
 .venv/
 venv/
 
-# 数据库
-.env
+.idea/
+.vscode/
+*.db
+
+mysql_data/
+.DS_Store

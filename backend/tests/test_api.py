@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, UTC
-import backend.main as main
+import main as main
 
 
 def test_root(client):
@@ -44,7 +44,7 @@ def test_oauth_callback_success_with_user_id(client, monkeypatch):
 
     resp = client.get(
         "/api/v1/auth/google/callback",
-        params={"code": "ok-code", "user_id": "user-abc"}
+        params={"code": "ok-code", "user_id": "user-abc"},
     )
     assert resp.status_code == 200
     assert resp.json() == {"success": True}
@@ -115,8 +115,7 @@ def test_gmail_reply_send(client, monkeypatch):
     monkeypatch.setattr(main, "send_reply", fake_reply)
 
     resp = client.post(
-        "/api/v1/gmail/mid-123/reply",
-        params={"user_id": "u1", "content": "Thanks!"}
+        "/api/v1/gmail/mid-123/reply", params={"user_id": "u1", "content": "Thanks!"}
     )
     assert resp.status_code == 200
     assert resp.json()["sent"] is True
@@ -141,7 +140,7 @@ def test_calendar_create_event(client, monkeypatch):
             "start_time": "2025-01-01T10:00:00Z",
             "end_time": "2025-01-01T11:00:00Z",
             "timezone": "Asia/Shanghai",
-        }
+        },
     )
     assert resp.status_code == 200
     assert resp.json()["id"] == "evt-1"
