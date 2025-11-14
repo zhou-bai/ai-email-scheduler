@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 from app.schemas.auth import AuthTokenResponse, LoginRequest, RegisterRequest
@@ -62,3 +63,9 @@ def login_user(
         subject=str(user.id), additional_claims={"email": user.email, "role": user.role}
     )
     return AuthTokenResponse(access_token=jwt_token, user_id=user.id, email=user.email)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout_user(current_user: User = Depends(get_current_user)) -> None:
+    # TODO: Maybe Implement token revocation if using a token blacklist
+    return None
