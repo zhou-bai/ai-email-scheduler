@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Tuple, List
+import re
 
 from sqlalchemy.orm import Session
 
@@ -37,13 +38,33 @@ def process_unread_emails(
             continue
 
         email_data = gmail.get_email(db, str(user_id), email_id)
-        is_spam, judge_reason, is_schedule, event_name, start_time, end_time = (
-            analyze_email(
-                email_content=email_data.get("body_text", ""),
-                sender=email_data.get("from"),
-                subject=email_data.get("subject"),
-            )
+        result = analyze_email(
+            email_content=email_data.get("body_text", ""),
+            sender=email_data.get("from"),
+            subject=email_data.get("subject"),
+            recipients=email_data.get("to"),
         )
+
+        if not result or not result.get("success"):
+            logger.warning("LLM analyze failed for email %s", email_id)
+            continue
+
+        data = result.get("data") or {}
+        is_spam = bool(data.get("is_spam"))
+        judge_reason = data.get("judge_reason") or ""
+        is_schedule = bool(data.get("is_schedule"))
+        event_name = data.get("event") or None
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+        location = data.get("location") or None
+        participants_info = data.get("participants") or ""
+        participants_list: List[str] = [p.strip() for p in participants_info.split(",") if p.strip()]
+        emails: List[str] = []
+        for item in participants_list:
+            emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", item))
+        seen: set[str] = set()
+        valid_emails = [e for e in emails if not (e in seen or seen.add(e))]
+        attendee_emails = ",".join(valid_emails) or None
 
         if is_spam:
             logger.info(
@@ -89,12 +110,21 @@ def process_unread_emails(
             summary = event_name or email_data.get("subject") or "Meeting"
             # insert to local calendar
             try:
+                description_text = (
+                    f"From: {email_data.get('from')}\n"
+                    f"Subject: {email_data.get('subject')}\n"
+                    f"Summary: {judge_reason}\n"
+                    f"Location: {location or 'None'}\n"
+                    f"Participants: {participants_info or 'None'}"
+                )
                 calendar_event_data = CalendarEventCreate(
                     user_id=user_id,
                     summary=summary,
-                    description=f"From email: {email_data.get('subject')}",
+                    description=description_text,
                     start_time=start_time,
                     end_time=end_time,
+                    location=location,
+                    attendees=attendee_emails,
                 )
                 db_event = create_calendar_event(db, calendar_event_data)
                 created_events += 1
