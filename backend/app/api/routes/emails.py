@@ -10,6 +10,13 @@ from app.models.user import User
 from app.schemas.email import EmailProcessRequest, EmailProcessResponse, EmailResponse
 from app.services.email_processor import process_unread_emails
 from app.services.email_service import delete_email, get_email_by_id, get_user_emails
+from app.models.email_recipient import EmailRecipient
+from app.schemas.email_recipient import (
+    EmailGenerateRequest,
+    EmailSendResponse,
+)
+from app.services.email_generation import email_generation_service
+from app.services import gmail
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["emails"])
@@ -99,3 +106,55 @@ def delete_email_endpoint(
             detail="Failed to delete email",
         )
     return {"success": True, "message": "Email deleted successfully"}
+
+
+@router.post("/generate-and-send", response_model=EmailSendResponse)
+def generate_and_send_email(
+    generate_request: EmailGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    recipient = (
+        db.query(EmailRecipient)
+        .filter(
+            EmailRecipient.id == generate_request.recipient_id,
+            EmailRecipient.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    gen = email_generation_service.generate_email_from_draft(
+        subject=generate_request.subject,
+        brief_content=generate_request.brief_content,
+        tone=generate_request.tone,
+        recipient_name=recipient.name,
+        sender_name=current_user.full_name,
+        purpose=generate_request.purpose,
+        additional_context=generate_request.additional_context,
+    )
+    if not gen["success"]:
+        return {
+            "success": False,
+            "message": gen.get("message", "Failed to generate email"),
+            "gmail_message_id": None,
+            "thread_id": None,
+        }
+
+    data = gen["data"]
+    res = gmail.send_email(
+        db=db,
+        user_id=str(current_user.id),
+        to_email=recipient.email,
+        subject=(data.get("subject") or generate_request.subject or "通知"),
+        body=data.get("body", ""),
+        body_html=data.get("body_html"),
+    )
+
+    return {
+        "success": res.get("success", False),
+        "message": res.get("message", ""),
+        "gmail_message_id": res.get("message_id"),
+        "thread_id": res.get("thread_id"),
+    }

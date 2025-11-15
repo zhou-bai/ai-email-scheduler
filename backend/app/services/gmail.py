@@ -110,3 +110,75 @@ def _extract_body(payload: Dict[str, Any]) -> str:
                     "utf-8", errors="ignore"
                 )
     return ""
+
+
+def send_email(
+    db: Session, user_id: str, to_email: str, subject: str, 
+    body: str, body_html: str = None, cc: str = None, bcc: str = None
+) -> Dict[str, Any]:
+    """
+    发送邮件
+    
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+        to_email: 收件人邮箱
+        subject: 邮件主题
+        body: 纯文本邮件内容
+        body_html: HTML邮件内容（可选）
+        cc: 抄送邮箱（可选）
+        bcc: 密送邮箱（可选）
+        
+    Returns:
+        {
+            "success": bool,
+            "message_id": str,
+            "thread_id": str,
+            "message": str
+        }
+    """
+    try:
+        creds = _get_creds(db, user_id)
+        service = build("gmail", "v1", credentials=creds)
+        
+        # 创建邮件消息
+        mime_msg = email.message.EmailMessage()
+        mime_msg["To"] = to_email
+        mime_msg["Subject"] = subject
+        
+        if cc:
+            mime_msg["Cc"] = cc
+        if bcc:
+            mime_msg["Bcc"] = bcc
+        
+        # 设置纯文本内容
+        mime_msg.set_content(body)
+        
+        # 如果有HTML内容，添加为替代内容
+        if body_html:
+            mime_msg.add_alternative(body_html, subtype='html')
+        
+        # 编码消息
+        raw = urlsafe_b64encode(mime_msg.as_bytes()).decode("utf-8")
+        
+        # 发送邮件
+        result = service.users().messages().send(
+            userId="me", 
+            body={"raw": raw}
+        ).execute()
+        
+        return {
+            "success": True,
+            "message_id": result.get("id"),
+            "thread_id": result.get("threadId"),
+            "message": "邮件发送成功"
+        }
+        
+    except Exception as e:
+        error_msg = f"邮件发送失败: {str(e)}"
+        return {
+            "success": False,
+            "message_id": None,
+            "thread_id": None,
+            "message": error_msg
+        }

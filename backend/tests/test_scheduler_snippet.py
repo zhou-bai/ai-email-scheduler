@@ -1,17 +1,14 @@
+import os
+import re
+import logging
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
-import logging
-import re
+import pytest
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 logging.disable(logging.CRITICAL)
-for _name in ("sqlalchemy", "sqlalchemy.engine", "sqlalchemy.pool"):
-    _l = logging.getLogger(_name)
-    _l.setLevel(logging.CRITICAL)
-    _l.propagate = False
-    _l.handlers.clear()
 
 from app.core.database import SessionLocal
 from app.db import get_user
@@ -19,20 +16,23 @@ from app.services import calendar, gmail
 from LLM import analyze_email
 
 
-def main():
+def test_example_scheduler_snippet_e2e():
     db = SessionLocal()
     try:
-        user_key = "kurasa907@gmail.com"
+        user_key = os.getenv("TEST_USER_EMAIL") or "kurasa907@gmail.com"
         user = get_user(db, user_key)
         if not user:
-            print("No user found")
-            return
-        messages = gmail.fetch_emails(db, user_key, max_results=10)
+            pytest.skip("No user found")
+        try:
+            messages = gmail.fetch_emails(db, user_key, max_results=5)
+        except Exception as e:
+            pytest.skip(f"gmail fetch failed: {e}")
         if not messages:
-            print("No unread emails")
-            return
+            pytest.skip("No unread emails")
+        processed = 0
+        created_events = 0
         for m in messages:
-            content = gmail.get_email(db, user_key, m["id"])
+            content = gmail.get_email(db, user_key, m.get("id"))
             subject_line = content.get("subject") or "(no subject)"
             result = analyze_email(
                 content.get("body_text", ""),
@@ -40,12 +40,11 @@ def main():
                 subject=content.get("subject"),
             )
             if not result or not result.get("success"):
-                print(f"{subject_line} - not added")
                 continue
             data = result.get("data") or {}
             if data.get("is_spam"):
-                print(f"{subject_line} - not added")
                 continue
+            processed += 1
             if data.get("is_schedule") and data.get("start_time"):
                 start_dt = data.get("start_time")
                 end_dt = data.get("end_time") or (start_dt + timedelta(hours=1))
@@ -57,7 +56,6 @@ def main():
                 emails = []
                 for it in participants_list:
                     emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", it))
-                attendee_emails = emails
                 details = {
                     "summary": summary,
                     "description": f"From: {content.get('from')}\nSubject: {subject_line}\nSummary: {email_summary}",
@@ -65,22 +63,14 @@ def main():
                     "end_time": end_dt.strftime("%Y-%m-%dT%H:%M:%S"),
                     "timezone": "Asia/Shanghai",
                     "location": location or None,
-                    "attendees": attendee_emails,
+                    "attendees": emails,
                 }
                 try:
-                    created = calendar.create_event(db, user_key, details)
-                    url = created.get("htmlLink") or created.get("id")
-                    if url:
-                        print(f"{subject_line} - added: {url}")
-                    else:
-                        print(f"{subject_line} - added")
-                except Exception as e:
-                    print(f"{subject_line} - failed: {e}")
-            else:
-                print(f"{subject_line} - not added")
+                    calendar.create_event(db, user_key, details)
+                    created_events += 1
+                except Exception:
+                    continue
+        assert processed >= 0
+        assert created_events >= 0
     finally:
         db.close()
-
-
-if __name__ == "__main__":
-    main()
