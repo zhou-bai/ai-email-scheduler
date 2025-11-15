@@ -4,7 +4,7 @@ const AUTH_PREFIX = '/api/v1/api/v1/simple/simple'
 
 export async function login({ email, password }) {
   const res = await http.post(`${AUTH_PREFIX}/login`, { email, password })
-  if (res?.token) setToken(res.token)
+  if (res?.access_token) setToken(res.access_token)
   return res
 }
 

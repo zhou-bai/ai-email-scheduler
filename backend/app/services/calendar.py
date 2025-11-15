@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+import re
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -12,13 +13,14 @@ def create_event(db: Session, user_id: str, event_details: Dict[str, Any]) -> Di
     creds = _get_creds(db, user_id)
     service = build("calendar", "v3", credentials=creds)
     timezone = event_details.get("timezone", "Asia/Shanghai")
+    attendees = _normalize_attendees(event_details.get("attendees"))
     body = {
         "summary": event_details["summary"],
         "location": event_details.get("location"),
         "description": event_details.get("description"),
         "start": {"dateTime": event_details["start_time"], "timeZone": timezone},
         "end": {"dateTime": event_details["end_time"], "timeZone": timezone},
-        "attendees": [{"email": e} for e in event_details.get("attendees", [])],
+        "attendees": attendees,
     }
     return service.events().insert(calendarId="primary", body=body).execute()
 
@@ -47,3 +49,23 @@ def _get_creds(db: Session, user_id: str) -> Credentials:
         scopes=settings.GOOGLE_SCOPES,
     )
     return creds
+
+
+def _normalize_attendees(value: Any) -> List[Dict[str, str]]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        items = [x.strip() for x in value.split(",") if x.strip()]
+        emails: List[str] = []
+        for it in items:
+            emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", it))
+        return [{"email": e} for e in emails]
+    if isinstance(value, list):
+        if all(isinstance(x, dict) and "email" in x for x in value):
+            return [{"email": x["email"]} for x in value if re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", x.get("email", ""))]
+        items = [str(x).strip() for x in value if str(x).strip()]
+        emails: List[str] = []
+        for s in items:
+            emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", s))
+        return [{"email": e} for e in emails]
+    return []
