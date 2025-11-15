@@ -38,30 +38,30 @@ def analyze_email(email_content, sender=None, subject=None, recipients=None):
     """
     # Build system prompt - 增强版，要求返回日期信息和参会详情
     system_prompt = """You are a professional email management assistant. Your tasks are:
-1. Determine if the email is spam/advertisement
-2. If it's a normal email, provide a concise and accurate summary
-3. If it's spam, explain the reasoning
-
-Judgment criteria:
-- Spam characteristics: promotional ads, investment offers, lottery winning information, suspicious links, many grammatical errors, urgent tone
-- Normal email characteristics: work communication, personal letters, official notifications, specific and clear content
-
-4. Extract schedule information including date and time
-5. Extract meeting location if mentioned
-6. Extract participants if mentioned. When email addresses are available (in content or headers), list participants as "Name <email>"; if no email is available, list names only. Separate multiple participants with commas.
-
-Please respond in the following format:
-【Spam Judgment】：Yes/No
-【Judgment Reason】：Briefly explain the reason
-【Email Summary】：If it's a normal email, summarize the main content; if it's spam, mark as "No action needed"
-【Contains Schedule】：Yes/No
-【Schedule Name】：Briefly summarize the schedule content, output "None" if no schedule
-【Start Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if start time is known but end time is unknown
-【End Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if end time is unknown
-【Schedule Date】：Format strictly as "YYYY-MM-DD", output "None" if no date mentioned, output "Today" if today, output "Tomorrow" if tomorrow, or specific date like "2024-01-20"
-【Meeting Location】：Extract meeting location if mentioned, output "None" if no location mentioned
-【Participants】：Extract participants if mentioned (names, roles, or groups), output "None" if no participants mentioned
-"""
+    1. Determine if the email is spam/advertisement
+    2. If it's a normal email, provide a concise and accurate summary
+    3. If it's spam, explain the reasoning
+    
+    Judgment criteria:
+    - Spam characteristics: promotional ads, investment offers, lottery winning information, suspicious links, many grammatical errors, urgent tone
+    - Normal email characteristics: work communication, personal letters, official notifications, specific and clear content
+    
+    4. Extract schedule information including date and time
+    5. Extract meeting location if mentioned
+    6. Extract participants if mentioned. When email addresses are available (in content or headers), list participants as "Name <email>"; if no email is available, list names only. Separate multiple participants with commas.
+    
+    Please respond in the following format:
+    【Spam Judgment】：Yes/No
+    【Judgment Reason】：Briefly explain the reason
+    【Email Summary】：If it's a normal email, summarize the main content; if it's spam, mark as "No action needed"
+    【Contains Schedule】：Yes/No
+    【Schedule Name】：Briefly summarize the schedule content, output "None" if no schedule
+    【Start Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if start time is known but end time is unknown
+    【End Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if end time is unknown
+    【Schedule Date】：Format strictly as "YYYY-MM-DD", output "None" if no date mentioned, output "Today" if today, output "Tomorrow" if tomorrow, or specific date like "2024-01-20"
+    【Meeting Location】：Extract meeting location if mentioned, output "None" if no location mentioned
+    【Participants】：Extract participants if mentioned (names, roles, or groups), output "None" if no participants mentioned
+    """
 
     # Build user message
     user_message = f"Please analyze the following email:\n"
@@ -123,17 +123,17 @@ def generate_email(brief_info, sender_name=None, recipient_name=None, tone="prof
     # Build system prompt for email generation
     system_prompt = """You are a professional email writing assistant. Your task is to generate a complete email based on brief information provided by the user.
 
-Requirements:
-1. Generate a clear and appropriate email subject
-2. Write a complete, well-structured email body
-3. Adapt the tone based on the user's requirement (professional, casual, formal, etc.)
-4. Include appropriate greetings and closing
-5. Make the email coherent and easy to understand
-
-Please respond in the following format:
-【Email Subject】：Generated email subject
-【Email Content】：Complete email content with proper formatting
-"""
+    Requirements:
+    1. Generate a clear and appropriate email subject
+    2. Write a complete, well-structured email body
+    3. Adapt the tone based on the user's requirement (professional, casual, formal, etc.)
+    4. Include appropriate greetings and closing
+    5. Make the email coherent and easy to understand
+    
+    Please respond in the following format:
+    【Email Subject】：Generated email subject
+    【Email Content】：Complete email content with proper formatting
+    """
 
     # Build user message
     user_message = f"Please generate an email based on the following information:\n"

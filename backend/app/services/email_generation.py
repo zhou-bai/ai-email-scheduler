@@ -134,20 +134,20 @@ class EmailGenerationService:
         
         # 包装成完整的HTML文档
         html_doc = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
-        p {{ margin: 10px 0; }}
-    </style>
-</head>
-<body>
-    {html}
-</body>
-</html>
-"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
+                p {{ margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            {html}
+        </body>
+        </html>
+        """
         return html_doc.strip()
     
     @staticmethod
