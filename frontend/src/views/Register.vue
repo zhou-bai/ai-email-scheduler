@@ -57,7 +57,7 @@
           </el-form-item>
           <el-alert
             class="password-tips"
-            title="Password must be at least 6 characters, and include mixed cases or special symbols for better security"
+            title="Password must be at least 8 characters, and include mixed cases or special symbols for better security"
             type="info"
             :closable="false"
           />
@@ -130,8 +130,8 @@ const rules = {
   password: [
     { required: true, message: 'Please enter password', trigger: 'blur' },
     {
-      min: 6,
-      message: 'Password must be at least 6 characters',
+      min: 8,
+      message: 'Password must be at least 8 characters',
       trigger: ['blur', 'change']
     }
   ],
@@ -150,19 +150,15 @@ const handleSubmit = () => {
 
     try {
       // 真实的注册请求
-      // await register({
-      //   name: form.name,
-      //   email: form.email,
-      //   password: form.password
-      // }).then(() => {
-      //   ElMessage.success('Signed up')
-      //   router.push('/')
-      // })
-      // 模拟注册
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setToken('demo-token')
-      ElMessage.success('Signed up (demo)')
-      router.push('/')
+      await register({
+        nickname: form.name,
+        email: form.email,
+        password: form.password
+      }).then((res) => {
+        setToken('demo-token')
+        ElMessage.success('Signed up')
+        router.push('/')
+      })
     } catch (error) {
       ElMessage.error('Sign up failed, please try again later')
     } finally {
