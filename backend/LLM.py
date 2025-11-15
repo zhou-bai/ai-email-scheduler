@@ -9,7 +9,7 @@ client = OpenAI(
 )
 
 
-def analyze_email(email_content, sender=None, subject=None):
+def analyze_email(email_content, sender=None, subject=None, recipients=None):
     """
     分析邮件内容，判断是否为垃圾邮件并提取日程信息
 
@@ -48,7 +48,7 @@ Judgment criteria:
 
 4. Extract schedule information including date and time
 5. Extract meeting location if mentioned
-6. Extract participants if mentioned
+6. Extract participants if mentioned. When email addresses are available (in content or headers), list participants as "Name <email>"; if no email is available, list names only. Separate multiple participants with commas.
 
 Please respond in the following format:
 【Spam Judgment】：Yes/No
@@ -69,6 +69,8 @@ Please respond in the following format:
         user_message += f"Subject: {subject}\n"
     if sender:
         user_message += f"Sender: {sender}\n"
+    if recipients:
+        user_message += f"Recipients: {recipients}\n"
     user_message += f"Content: {email_content}"
 
     messages = [

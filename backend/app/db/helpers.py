@@ -115,6 +115,11 @@ def save_token(
     refresh_token: str = "",
     expires_at: Optional[datetime] = None,
 ) -> OAuthToken:
+    """Save OAuth tokens for a user, replacing any existing tokens."""
+    # Remove existing tokens
+    db.query(OAuthToken).filter(OAuthToken.user_id == user_id).delete()
+
+    # Create new token
     token = OAuthToken(
         user_id=user_id,
         access_token=access_token,

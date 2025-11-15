@@ -150,19 +150,19 @@ const handleSubmit = () => {
 
     try {
       // 真实的注册请求
-      // await register({
-      //   name: form.name,
-      //   email: form.email,
-      //   password: form.password
-      // }).then(() => {
-      //   ElMessage.success('Signed up')
-      //   router.push('/')
-      // })
-      // 模拟注册
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setToken('demo-token')
-      ElMessage.success('Signed up (demo)')
-      router.push('/')
+      await register({
+        full_name: form.name,
+        email: form.email,
+        password: form.password
+      }).then(() => {
+        ElMessage.success('Signed up')
+        router.push('/')
+      })
+      // // 模拟注册
+      // await new Promise((resolve) => setTimeout(resolve, 1000))
+      // setToken('demo-token')
+      // ElMessage.success('Signed up (demo)')
+      // router.push('/')
     } catch (error) {
       ElMessage.error('Sign up failed, please try again later')
     } finally {
