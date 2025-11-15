@@ -1,6 +1,6 @@
 import { http, setToken } from './request'
 
-const AUTH_PREFIX = '/api/v1/auth'
+const AUTH_PREFIX = '/api/v1/api/v1/simple/simple'
 
 export async function login({ email, password }) {
   const res = await http.post(`${AUTH_PREFIX}/login`, { email, password })
@@ -8,9 +8,9 @@ export async function login({ email, password }) {
   return res
 }
 
-export async function register({ name, email, password }) {
-  const res = await http.post(`${AUTH_PREFIX}/register`, { name, email, password })
-  if (res?.access_token) setToken(res.access_token)
+export async function register({ nickname, email, password }) {
+  const res = await http.post(`${AUTH_PREFIX}/register`, { nickname, email, password })
+  if (res?.token) setToken(res.token)
   return res
 }
 
