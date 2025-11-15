@@ -36,8 +36,14 @@ def analyze_email(email_content, sender=None, subject=None, recipients=None):
       message?: string;          // 错误信息
     }
     """
+
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M")
+    day_of_week = now.strftime("%A")  # Monday, Tuesday, etc.
+
     # Build system prompt - 增强版，要求返回日期信息和参会详情
-    system_prompt = """You are a professional email management assistant. Your tasks are:
+    system_prompt = f"""You are a professional email management assistant. Your tasks are:
 1. Determine if the email is spam/advertisement
 2. If it's a normal email, provide a concise and accurate summary
 3. If it's spam, explain the reasoning
@@ -50,6 +56,21 @@ Judgment criteria:
 5. Extract meeting location if mentioned
 6. Extract participants if mentioned. When email addresses are available (in content or headers), list participants as "Name <email>"; if no email is available, list names only. Separate multiple participants with commas.
 
+
+Current Date: {current_date}
+Current Time: {current_time}
+Day of Week: {day_of_week}
+
+When you encounter relative date expressions, calculate them based on the current date above:
+- "today" → {current_date}
+- "tomorrow" → calculate as 1 day after {current_date}
+- "next Monday/Tuesday/etc." → find the next occurrence of that weekday after {current_date}
+- "next week" → calculate as 7 days after {current_date}
+- "this Friday" → find the upcoming Friday in the current week from {current_date}
+
+IMPORTANT: Always output the calculated absolute date in YYYY-MM-DD format in the 【Schedule Date】 field.
+Do NOT output "Today" or "Tomorrow" - convert them to actual dates like "2025-11-15".
+
 Please respond in the following format:
 【Spam Judgment】：Yes/No
 【Judgment Reason】：Briefly explain the reason
@@ -58,7 +79,7 @@ Please respond in the following format:
 【Schedule Name】：Briefly summarize the schedule content, output "None" if no schedule
 【Start Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if start time is known but end time is unknown
 【End Time】：Format strictly as "10:00", 24-hour format, output "None" if no schedule, output "Unknown" if end time is unknown
-【Schedule Date】：Format strictly as "YYYY-MM-DD", output "None" if no date mentioned, output "Today" if today, output "Tomorrow" if tomorrow, or specific date like "2024-01-20"
+【Schedule Date】：Format strictly as "YYYY-MM-DD" (absolute date, NOT "Today" or "Tomorrow"), output "None" if no date mentioned
 【Meeting Location】：Extract meeting location if mentioned, output "None" if no location mentioned
 【Participants】：Extract participants if mentioned (names, roles, or groups), output "None" if no participants mentioned
 """
