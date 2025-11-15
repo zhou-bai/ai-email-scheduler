@@ -40,13 +40,23 @@ def process_emails(
 
 
 @router.get("/{email_id}", response_model=EmailResponse)
-def get_email(email_id: int, db: Session = Depends(get_db)):
-    """Get email by ID"""
+def get_email(
+    email_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     email = get_email_by_id(db, email_id)
     if not email:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Email not found"
         )
+
+    if email.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: you don't own this email",
+        )
+
     return email
 
 
@@ -62,11 +72,30 @@ def list_emails(
 
 
 @router.delete("/{email_id}")
-def delete_email_endpoint(email_id: int, db: Session = Depends(get_db)):
-    """Delete email by ID"""
+def delete_email_endpoint(
+    email_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Fetch email to verify ownership
+    email = get_email_by_id(db, email_id)
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Email not found"
+        )
+
+    # check ownership
+    if email.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: you don't own this email",
+        )
+
+    # Perform deletion
     success = delete_email(db, email_id)
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Email not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete email",
         )
     return {"success": True, "message": "Email deleted successfully"}

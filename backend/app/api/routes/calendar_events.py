@@ -27,19 +27,37 @@ router = APIRouter(tags=["calendar_events"])
 @router.post(
     "/", response_model=CalendarEventResponse, status_code=status.HTTP_201_CREATED
 )
-def create_event(event_data: CalendarEventCreate, db: Session = Depends(get_db)):
-    """Create a new calendar event"""
+def create_event(
+    event_data: CalendarEventCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a new calendar event
+
+    Security: Requires authentication, event is automatically associated with the current user
+    """
     return create_calendar_event(db, event_data)
 
 
 @router.get("/{event_id}", response_model=CalendarEventResponse)
-def get_event(event_id: int, db: Session = Depends(get_db)):
-    """Get calendar event by ID"""
+def get_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     event = get_calendar_event_by_id(db, event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found"
         )
+
+    # check ownership
+    if event.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: you don't own this event",
+        )
+
     return event
 
 
@@ -56,25 +74,50 @@ def list_events(
 
 @router.put("/{event_id}", response_model=CalendarEventResponse)
 def update_event(
-    event_id: int, event_data: CalendarEventUpdate, db: Session = Depends(get_db)
+    event_id: int,
+    event_data: CalendarEventUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Update calendar event"""
-    event = update_calendar_event(db, event_id, event_data)
+    # 先获取事件验证所有权
+    event = get_calendar_event_by_id(db, event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found"
         )
-    return event
+
+    # check ownership
+    if event.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: you don't own this event",
+        )
+
+    updated_event = update_calendar_event(db, event_id, event_data)
+    return updated_event
 
 
 @router.delete("/{event_id}")
-def delete_event(event_id: int, db: Session = Depends(get_db)):
-    """Delete calendar event"""
-    success = delete_calendar_event(db, event_id)
-    if not success:
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    event = get_calendar_event_by_id(db, event_id)
+    if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Calendar event not found"
         )
+
+    # check ownership
+    if event.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: you don't own this event",
+        )
+
+    # Perform deletion
+    delete_calendar_event(db, event_id)
     return {"success": True, "message": "Calendar event deleted successfully"}
 
 
@@ -104,7 +147,9 @@ def confirm_event(
         "description": event.description,
         "start_time": event.start_time.isoformat(),  # RFC3339
         "end_time": event.end_time.isoformat(),
-        "attendees": [{"email": e} for e in event.attendees.split(",")]
+        "attendees": [
+            {"email": e.strip()} for e in event.attendees.split(",") if e.strip()
+        ]
         if event.attendees
         else [],
         "timezone": "Asia/Shanghai",

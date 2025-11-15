@@ -103,20 +103,15 @@ const handleSubmit = () => {
 
     try {
       // 真实的登录请求
-      // await login({
-      //   email: form.email,
-      //   password: form.password
-      // }).then(() => {
-      //   ElMessage.success('Signed in')
-      //   const redirect = route.query.redirect || '/'
-      //   router.push(redirect)
-      // })
-      // 模拟登录
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setToken('demo-token')
-      ElMessage.success('Signed in')
-      const redirect = route.query.redirect || '/'
-      router.push(redirect)
+      await login({
+        email: form.email,
+        password: form.password
+      }).then(() => {
+        ElMessage.success('Signed in')
+        setToken('demo-token')
+        const redirect = '/'
+        router.push(redirect)
+      })
     } catch (error) {
       ElMessage.error('Sign in failed, please try again later')
     } finally {
