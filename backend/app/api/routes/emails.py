@@ -13,6 +13,8 @@ from app.services.email_service import delete_email, get_email_by_id, get_user_e
 from app.models.email_recipient import EmailRecipient
 from app.schemas.email_recipient import (
     EmailGenerateRequest,
+    EmailGenerateResponse,
+    EmailSendRequest,
     EmailSendResponse,
 )
 from app.services.email_generation import email_generation_service
@@ -114,23 +116,36 @@ def generate_and_send_email(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    recipient = (
-        db.query(EmailRecipient)
-        .filter(
-            EmailRecipient.id == generate_request.recipient_id,
-            EmailRecipient.user_id == current_user.id,
+    recipients: list[EmailRecipient] = []
+    if generate_request.recipient_ids:
+        recipients = (
+            db.query(EmailRecipient)
+            .filter(EmailRecipient.user_id == current_user.id)
+            .filter(EmailRecipient.id.in_(generate_request.recipient_ids))
+            .all()
         )
-        .first()
-    )
-    if not recipient:
+    elif generate_request.recipient_id is not None:
+        r = (
+            db.query(EmailRecipient)
+            .filter(
+                EmailRecipient.id == generate_request.recipient_id,
+                EmailRecipient.user_id == current_user.id,
+            )
+            .first()
+        )
+        if r:
+            recipients = [r]
+    if not recipients:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
     gen = email_generation_service.generate_email_from_draft(
         subject=generate_request.subject,
         brief_content=generate_request.brief_content,
         tone=generate_request.tone,
-        recipient_name=recipient.name,
-        sender_name=current_user.full_name,
+        recipient_name=(recipients[0].name if recipients else None),
+        sender_name=generate_request.sender_name or current_user.full_name,
+        sender_position=generate_request.sender_position,
+        sender_contact=generate_request.sender_contact,
         purpose=generate_request.purpose,
         additional_context=generate_request.additional_context,
     )
@@ -143,13 +158,122 @@ def generate_and_send_email(
         }
 
     data = gen["data"]
+    to_emails = ",".join([r.email for r in recipients])
     res = gmail.send_email(
         db=db,
         user_id=str(current_user.id),
-        to_email=recipient.email,
+        to_email=to_emails,
         subject=(data.get("subject") or generate_request.subject or "通知"),
         body=data.get("body", ""),
         body_html=data.get("body_html"),
+    )
+
+    return {
+        "success": res.get("success", False),
+        "message": res.get("message", ""),
+        "gmail_message_id": res.get("message_id"),
+        "thread_id": res.get("thread_id"),
+    }
+
+
+@router.post("/generate", response_model=EmailGenerateResponse)
+def generate_email(
+    generate_request: EmailGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    recipients: list[EmailRecipient] = []
+    if generate_request.recipient_ids:
+        recipients = (
+            db.query(EmailRecipient)
+            .filter(EmailRecipient.user_id == current_user.id)
+            .filter(EmailRecipient.id.in_(generate_request.recipient_ids))
+            .all()
+        )
+    elif generate_request.recipient_id is not None:
+        r = (
+            db.query(EmailRecipient)
+            .filter(
+                EmailRecipient.id == generate_request.recipient_id,
+                EmailRecipient.user_id == current_user.id,
+            )
+            .first()
+        )
+        if r:
+            recipients = [r]
+    if not recipients:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    gen = email_generation_service.generate_email_from_draft(
+        subject=generate_request.subject,
+        brief_content=generate_request.brief_content,
+        tone=generate_request.tone,
+        recipient_name=(recipients[0].name if recipients else None),
+        sender_name=generate_request.sender_name or current_user.full_name,
+        sender_position=generate_request.sender_position,
+        sender_contact=generate_request.sender_contact,
+        purpose=generate_request.purpose,
+        additional_context=generate_request.additional_context,
+    )
+    if not gen["success"]:
+        return {
+            "success": False,
+            "message": gen.get("message", "Failed to generate email"),
+            "recipient_id": generate_request.recipient_id,
+            "recipient_ids": generate_request.recipient_ids,
+            "subject": generate_request.subject or "",
+            "body": "",
+            "body_html": None,
+        }
+
+    data = gen["data"]
+    return {
+        "success": True,
+        "message": "ok",
+        "recipient_id": generate_request.recipient_id,
+        "recipient_ids": generate_request.recipient_ids,
+        "subject": data.get("subject") or generate_request.subject or "通知",
+        "body": data.get("body", ""),
+        "body_html": data.get("body_html"),
+    }
+
+
+@router.post("/send", response_model=EmailSendResponse)
+def send_email_endpoint(
+    send_request: EmailSendRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    recipients: list[EmailRecipient] = []
+    if send_request.recipient_ids:
+        recipients = (
+            db.query(EmailRecipient)
+            .filter(EmailRecipient.user_id == current_user.id)
+            .filter(EmailRecipient.id.in_(send_request.recipient_ids))
+            .all()
+        )
+    elif send_request.recipient_id is not None:
+        r = (
+            db.query(EmailRecipient)
+            .filter(
+                EmailRecipient.id == send_request.recipient_id,
+                EmailRecipient.user_id == current_user.id,
+            )
+            .first()
+        )
+        if r:
+            recipients = [r]
+    if not recipients:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    to_emails = ",".join([r.email for r in recipients])
+    res = gmail.send_email(
+        db=db,
+        user_id=str(current_user.id),
+        to_email=to_emails,
+        subject=send_request.subject,
+        body=send_request.body,
+        body_html=send_request.body_html,
     )
 
     return {

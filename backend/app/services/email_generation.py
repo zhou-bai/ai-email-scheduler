@@ -18,6 +18,8 @@ class EmailGenerationService:
         tone: str,
         recipient_name: Optional[str] = None,
         sender_name: Optional[str] = None,
+        sender_position: Optional[str] = None,
+        sender_contact: Optional[str] = None,
         purpose: Optional[str] = None,
         additional_context: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -98,6 +100,12 @@ class EmailGenerationService:
             llm_data = result["data"]
             generated_subject = llm_data.get("subject", subject or "通知")
             generated_content = llm_data.get("content", "")
+            generated_content = EmailGenerationService._apply_signature(
+                generated_content,
+                sender_name=sender_name,
+                sender_position=sender_position,
+                sender_contact=sender_contact,
+            )
             
             # 转换为HTML格式
             body_html = EmailGenerationService._convert_to_html(generated_content)
@@ -149,6 +157,37 @@ class EmailGenerationService:
         </html>
         """
         return html_doc.strip()
+
+    @staticmethod
+    def _apply_signature(
+        content: str,
+        sender_name: Optional[str] = None,
+        sender_position: Optional[str] = None,
+        sender_contact: Optional[str] = None,
+    ) -> str:
+        if not content:
+            return content
+        lines = content.splitlines()
+        out = []
+        for line in lines:
+            l = line
+            if "[Your Name]" in l:
+                if sender_name:
+                    l = l.replace("[Your Name]", sender_name)
+                else:
+                    continue
+            if "[Your Position]" in l:
+                if sender_position:
+                    l = l.replace("[Your Position]", sender_position)
+                else:
+                    continue
+            if "[Your Contact Information]" in l:
+                if sender_contact:
+                    l = l.replace("[Your Contact Information]", sender_contact)
+                else:
+                    continue
+            out.append(l)
+        return "\n".join(out)
     
     @staticmethod
     def validate_tone(tone: str) -> str:

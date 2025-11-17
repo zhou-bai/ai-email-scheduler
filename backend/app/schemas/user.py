@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UserProfileResponse(BaseModel):
@@ -8,6 +8,4 @@ class UserProfileResponse(BaseModel):
     role: str
     is_active: bool
     google_sub: str | None
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
