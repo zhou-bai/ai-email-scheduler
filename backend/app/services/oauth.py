@@ -118,7 +118,10 @@ def get_fresh_token(db: Session, user_key: str) -> str:
     if not token:
         raise RuntimeError("No tokens found")
 
-    if token.expires_at and token.expires_at > datetime.now(UTC):
+    expires_at = token.expires_at
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if expires_at and expires_at > datetime.now(UTC):
         return token.access_token
 
     if not token.refresh_token:
