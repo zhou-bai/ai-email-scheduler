@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
@@ -55,7 +55,7 @@ def exchange_code_for_tokens(
     access_token = payload.get("access_token")
     refresh_token = payload.get("refresh_token")
     expires_in = payload.get("expires_in")
-    expiry = (datetime.utcnow() + timedelta(seconds=expires_in)) if expires_in else None
+    expiry = (datetime.now(UTC) + timedelta(seconds=expires_in)) if expires_in else None
 
     if not access_token:
         raise RuntimeError(f"Failed to get access_token: {payload}")
@@ -118,7 +118,7 @@ def get_fresh_token(db: Session, user_key: str) -> str:
     if not token:
         raise RuntimeError("No tokens found")
 
-    if token.expires_at and token.expires_at > datetime.utcnow():
+    if token.expires_at and token.expires_at > datetime.now(UTC):
         return token.access_token
 
     if not token.refresh_token:
@@ -142,7 +142,7 @@ def _refresh_token(refresh_token: str) -> Tuple[str, Optional[datetime]]:
 
     access_token = payload.get("access_token")
     expires_in = payload.get("expires_in")
-    expiry = (datetime.utcnow() + timedelta(seconds=expires_in)) if expires_in else None
+    expiry = (datetime.now(UTC) + timedelta(seconds=expires_in)) if expires_in else None
 
     if not access_token:
         raise RuntimeError(f"Failed to refresh token: {payload}")
