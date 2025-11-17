@@ -31,7 +31,7 @@ def create_recipient(
     )
     if existing:
         raise HTTPException(status_code=400, detail="Recipient email already exists")
-    recipient = EmailRecipient(user_id=current_user.id, **recipient_in.dict())
+    recipient = EmailRecipient(user_id=current_user.id, **recipient_in.model_dump())
     db.add(recipient)
     db.commit()
     db.refresh(recipient)
@@ -94,7 +94,7 @@ def update_recipient(
     )
     if not recipient:
         raise HTTPException(status_code=404, detail="Recipient not found")
-    update_data = recipient_in.dict(exclude_unset=True)
+    update_data = recipient_in.model_dump(exclude_unset=True)
     if "email" in update_data and update_data["email"] is not None:
         exists = (
             db.query(EmailRecipient)
