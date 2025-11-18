@@ -154,7 +154,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { generateEmail, sendEmail } from '../api'
+import { generateEmail, sendEmail } from '../api/genEmail.js'
 
 const formRef = ref(null)
 const loading = ref(false)
