@@ -1,6 +1,6 @@
 import { http, setToken } from './request'
 
-const AUTH_PREFIX = '/api/v1/api/v1/simple/simple'
+const AUTH_PREFIX = '/api/v1/simple'
 
 export async function login({ email, password }) {
   const res = await http.post(`${AUTH_PREFIX}/login`, { email, password })

@@ -60,6 +60,17 @@
           </el-row>
         </div>
       </el-tab-pane>
+
+      <el-tab-pane name="compose">
+        <template #label>
+          <span class="tab-label">
+            <el-icon><EditPen /></el-icon>
+            <span>生成邮件</span>
+          </span>
+        </template>
+
+        <GenerateEmail />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -69,7 +80,9 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import EventCard from '../components/EventCard.vue'
 import EmailSummary from '../components/EmailSummary.vue'
-import { Refresh, Message, Calendar } from '@element-plus/icons-vue'
+import GenerateEmail from '../components/GenerateEmail.vue'
+import { Refresh, Message, Calendar, EditPen } from '@element-plus/icons-vue'
+
 
 // 引入 API
 import { getEmails, processEmails } from '../api/email.js'
