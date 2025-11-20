@@ -47,22 +47,15 @@
             </el-form-item>
 
             <el-row :gutter="16">
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="单个收件人 ID" prop="recipient_id">
-                  <el-input
-                    v-model="form.recipient_id"
-                    style="width: 100%;"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24">
                 <el-form-item
-                  label="收件人 ID 列表（以逗号分隔）"
-                  prop="recipient_ids_input"
+                  label="收件人邮箱（多个请用英文逗号分隔）"
+                  prop="to_emails_input"
                 >
                   <el-input
-                    v-model="form.recipient_ids_input"
-                    placeholder="例如：1,2,3"
+                    v-model="form.to_emails_input"
+                    placeholder="例如：client@example.com, boss@company.com"
+                    clearable
                   />
                 </el-form-item>
               </el-col>
@@ -162,8 +155,7 @@ const result = ref(null)
 const responseText = ref('')
 
 const form = reactive({
-  recipient_id: 0,
-  recipient_ids_input: '',
+  to_emails_input: '', // 改为存储邮箱字符串
   subject: '',
   brief_content: '',
   tone: 'professional',
@@ -175,6 +167,7 @@ const form = reactive({
 })
 
 const rules = {
+  to_emails_input: [{ required: true, message: '请输入至少一个收件人邮箱', trigger: 'blur' }],
   subject: [{ required: true, message: '请输入邮件主题', trigger: 'blur' }],
   brief_content: [
     { required: true, message: '请填写内容概述', trigger: 'blur' },
@@ -186,26 +179,14 @@ const rules = {
   ]
 }
 
-const buildRecipientInfo = () => {
-  const parseRecipientIds = (value) =>
-    value
-      .split(',')
-      .map((id) => Number(id.trim()))
-      .filter((id) => !Number.isNaN(id))
-
-  const primaryRecipientId = Number(form.recipient_id)
-  const parsedRecipientIds = form.recipient_ids_input
-    ? parseRecipientIds(form.recipient_ids_input)
+// 辅助函数：将输入的字符串解析为邮箱列表
+const buildEmailPayload = () => {
+  const emails = form.to_emails_input
+    ? form.to_emails_input.split(',').map((e) => e.trim()).filter((e) => e)
     : []
-  const fallbackRecipientId = Number.isNaN(primaryRecipientId)
-    ? 0
-    : primaryRecipientId
-  const recipientIds =
-    parsedRecipientIds.length > 0 ? parsedRecipientIds : [fallbackRecipientId]
-
+  
   return {
-    recipient_id: fallbackRecipientId,
-    recipient_ids: recipientIds
+    to_emails: emails // 后端直接接收字符串数组
   }
 }
 
@@ -216,11 +197,11 @@ const handleCompose = () => {
     result.value = null
     responseText.value = ''
     try {
-      const { recipient_id, recipient_ids } = buildRecipientInfo()
+      const { to_emails } = buildEmailPayload()
 
+      // 构建 Payload：移除 recipient_id，使用 to_emails
       const payload = {
-        recipient_id,
-        recipient_ids,
+        to_emails,
         subject: form.subject,
         brief_content: form.brief_content,
         tone: form.tone,
@@ -230,6 +211,7 @@ const handleCompose = () => {
         sender_position: form.sender_position || undefined,
         sender_contact: form.sender_contact || undefined
       }
+      
       const { data } = await generateEmail(payload)
       responseText.value = JSON.stringify(data, null, 2)
       if (!data?.success) {
@@ -237,7 +219,8 @@ const handleCompose = () => {
       }
       result.value = {
         subject: data.subject || form.subject,
-        content: data.content || ''
+        // 后端返回字段为 body，为了兼容性，建议同时尝试读取 body 和 content
+        content: data.body || data.content || '' 
       }
       ElMessage.success('邮件生成成功')
     } catch (error) {
@@ -283,14 +266,16 @@ const handleSend = async () => {
 
   loading.value = true
   try {
-    const { recipient_id, recipient_ids } = buildRecipientInfo()
+    const { to_emails } = buildEmailPayload()
+    
+    // 构建 Payload：移除 recipient_id，使用 to_emails
     const payload = {
-      recipient_id,
-      recipient_ids,
+      to_emails,
       subject: result.value.subject || form.subject,
       body: result.value.content || '',
       body_html: result.value.content || ''
     }
+    
     const { data } = await sendEmail(payload)
     responseText.value = JSON.stringify(data, null, 2)
     ElMessage.success('邮件发送成功')
