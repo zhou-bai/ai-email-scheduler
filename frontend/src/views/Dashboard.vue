@@ -29,7 +29,12 @@
         </template>
         <el-empty v-if="emailSummaries.length === 0" description="No email data available." :image-size="100" />
         <div v-else class="summary-list-container">
-          <EmailSummary v-for="summary in emailSummaries" :key="summary.id" :summary="summary" />
+          <EmailSummary
+            v-for="summary in emailSummaries"
+            :key="summary.id"
+            :summary="summary"
+            @delete="handleDeleteEmail"
+          />
         </div>
       </el-tab-pane>
 
@@ -52,9 +57,10 @@
               :xs="24" :sm="12" :md="8"
               style="margin-bottom: 20px;"
             >
-              <EventCard 
-                :event="event" 
+              <EventCard
+                :event="event"
                 @confirmed="removeEventFromList"
+                @deleted="removeEventFromList"
               />
             </el-col>
           </el-row>
@@ -77,7 +83,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import EventCard from '../components/EventCard.vue'
 import EmailSummary from '../components/EmailSummary.vue'
 import GenerateEmail from '../components/GenerateEmail.vue'
@@ -85,7 +91,7 @@ import { Refresh, Message, Calendar, EditPen } from '@element-plus/icons-vue'
 
 
 // 引入 API
-import { getEmails, processEmails } from '../api/email.js'
+import { getEmails, processEmails, deleteEmail } from '../api/email.js'
 import { getCalendarEvents } from '../api/calendar.js'
 import { getGoogleAuthUrl } from '../api/auth.js'
 
@@ -163,6 +169,32 @@ const handleRefresh = async () => {
 // 当用户在 EventCard 点击确认后，前端直接把该条目移除，无需刷新整个列表
 const removeEventFromList = (id) => {
   pendingEvents.value = pendingEvents.value.filter(e => e.id !== id)
+}
+
+const handleDeleteEmail = async (emailId) => {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to delete this email? If there are linked calendar events, you must delete all associated events first.',
+      'Delete Confirmation',
+      {
+        confirmButtonText: 'Confirm',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    await deleteEmail(emailId)
+    emailSummaries.value = emailSummaries.value.filter(e => e.id !== emailId)
+    ElMessage.success('Email deleted successfully')
+  } catch (error) {
+    if (error === 'cancel') return
+
+    const errorMsg = error.response?.data?.detail
+      || error.response?.data?.message
+      || error.message
+      || 'Failed to delete email'
+    ElMessage.error(errorMsg)
+  }
 }
 
 const connectGoogle = async () => {

@@ -3,15 +3,26 @@
     <template #header>
       <div class="card-header">
         <span class="event-title" :title="event.title">{{ event.title }}</span>
-        
-        <el-button 
-          type="success" 
-          size="small"
-          :loading="loading"
-          @click="handleConfirm"
-        >
-          Confirm and synchronize
-        </el-button>
+
+        <div class="button-group">
+          <el-button
+            type="success"
+            size="small"
+            :loading="loading"
+            @click="handleConfirm"
+          >
+            Confirm and synchronize
+          </el-button>
+          <el-button
+            type="danger"
+            size="small"
+            :icon="Delete"
+            :loading="deleting"
+            @click="handleDelete"
+          >
+            Delete
+          </el-button>
+        </div>
       </div>
     </template>
 
@@ -46,8 +57,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { confirmCalendarEvent } from '../api/calendar.js'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete } from '@element-plus/icons-vue'
+import { confirmCalendarEvent, deleteCalendarEvent } from '../api/calendar.js'
 
 const props = defineProps({
   event: {
@@ -57,26 +69,56 @@ const props = defineProps({
 })
 
 // 定义 emits，用于通知父组件删除卡片
-const emit = defineEmits(['confirmed'])
+const emit = defineEmits(['confirmed', 'deleted'])
 
 const loading = ref(false)
+const deleting = ref(false)
 
 const handleConfirm = async () => {
   loading.value = true
   try {
     // 调用后端 confirm 接口
     const res = await confirmCalendarEvent(props.event.id)
-    
+
     if (res.data.success) {
-      ElMessage.success(`已同步至 Google Calendar (ID: ${res.data.google_event_id})`)
       // 通知 Dashboard 组件移除这张卡片
+      ElMessage.success(`Synced to Google Calendar (ID: ${res.data.google_event_id})`)
       emit('confirmed', props.event.id)
     }
   } catch (error) {
     console.error(error)
-    ElMessage.error('同步失败，请重试')
+    ElMessage.error('Sync failed, please try again')
   } finally {
     loading.value = false
+  }
+}
+
+const handleDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to delete this calendar event?',
+      'Delete Confirmation',
+      {
+        confirmButtonText: 'Confirm',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    deleting.value = true
+    await deleteCalendarEvent(props.event.id)
+    ElMessage.success('Calendar event deleted successfully')
+    emit('deleted', props.event.id)
+  } catch (error) {
+    if (error === 'cancel') return
+
+    const errorMsg = error.response?.data?.detail
+      || error.response?.data?.message
+      || error.message
+      || 'Failed to delete event'
+    ElMessage.error(errorMsg)
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -87,14 +129,21 @@ const handleConfirm = async () => {
   justify-content: space-between;
   align-items: center;
 }
+
 .event-title {
   font-weight: bold;
   /* 简单的文本截断 */
-  max-width: 60%;
+  max-width: 50%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
 .attendee-tag {
   margin-right: 5px;
 }

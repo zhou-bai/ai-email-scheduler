@@ -2,9 +2,21 @@
   <el-card class="summary-card" shadow="never">
     <div class="summary-content">
       <div class="summary-header">
-        <span class="sender">{{ summary.sender }}</span>
-        <span class="subject">{{ summary.subject }}</span>
-        <span class="time">{{ formatTime(summary.receivedAt) }}</span>
+        <div class="header-left">
+          <span class="sender">{{ summary.sender }}</span>
+          <span class="subject">{{ summary.subject }}</span>
+        </div>
+        <div class="header-right">
+          <span class="time">{{ formatTime(summary.receivedAt) }}</span>
+          <el-button
+            type="danger"
+            :icon="Delete"
+            size="small"
+            text
+            @click="handleDelete"
+            class="delete-btn"
+          />
+        </div>
       </div>
       <div class="summary-body">
         <p>{{ summary.summary }}</p>
@@ -20,7 +32,9 @@
 
 <script setup>
 // 定义这个组件接收一个名为 'summary' 的 prop
-defineProps({
+import { Delete } from '@element-plus/icons-vue'
+
+const props = defineProps({
   summary: {
     type: Object,
     required: true
@@ -28,9 +42,15 @@ defineProps({
 })
 
 // 一个简单的时间格式化函数
+const emit = defineEmits(['delete'])
+
 const formatTime = (isoString) => {
-  const date = new Date(isoString);
-  return date.toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(isoString)
+  return date.toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+const handleDelete = () => {
+  emit('delete', props.summary.id)
 }
 </script>
 
@@ -52,9 +72,26 @@ const formatTime = (isoString) => {
   align-items: center;
   margin-bottom: 8px;
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .sender {
   font-weight: bold;
+  white-space: nowrap;
 }
+
 .subject {
   color: #606266;
   margin: 0 10px;
@@ -62,13 +99,25 @@ const formatTime = (isoString) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-grow: 1; /* 占据剩余空间 */
+  flex: 1;
 }
+
 .time {
   color: #909399;
   font-size: 12px;
   white-space: nowrap; /* 防止时间换行 */
 }
+
+.delete-btn {
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
 .summary-body p {
   margin: 0 0 10px 0;
   color: #303133;

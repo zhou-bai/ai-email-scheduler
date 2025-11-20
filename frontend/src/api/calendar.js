@@ -34,4 +34,8 @@ export const createCalendarEvent = (data) => {
   return request.post('/api/v1/calendar-events/', data)
 }
 
+export const deleteCalendarEvent = (eventId) => {
+  return request.delete(`/api/v1/calendar-events/${eventId}`)
+}
+
 export default request
