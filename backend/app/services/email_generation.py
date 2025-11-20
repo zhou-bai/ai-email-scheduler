@@ -139,22 +139,25 @@ class EmailGenerationService:
         if not text_content:
             return ""
         
-        # 简单的文本到HTML转换
-        html = text_content.replace('\n', '<br>')
-        
-        # 包装成完整的HTML文档
+        # 简单的文本到HTML转换为段落与换行
+        import re, html as _html
+        t = text_content.replace('\r\n', '\n').replace('\r', '\n')
+        parts = re.split(r"\n\s*\n", t)
+        out = []
+        for p in parts:
+            if not p.strip():
+                continue
+            h = _html.escape(p).replace('\n', '<br>')
+            out.append(f"<p>{h}</p>")
+        body_html = "".join(out) if out else "<p></p>"
         html_doc = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
-                p {{ margin: 10px 0; }}
-            </style>
         </head>
-        <body>
-            {html}
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px;">
+            {body_html}
         </body>
         </html>
         """

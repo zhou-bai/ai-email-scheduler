@@ -272,8 +272,7 @@ const handleSend = async () => {
     const payload = {
       to_emails,
       subject: result.value.subject || form.subject,
-      body: result.value.content || '',
-      body_html: result.value.content || ''
+      body: result.value.content || ''
     }
     
     const { data } = await sendEmail(payload)

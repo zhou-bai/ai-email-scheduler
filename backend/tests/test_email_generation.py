@@ -176,16 +176,14 @@ def test_send_real_email():
         db.close()
         pytest.skip("缺少OAuth令牌，请先完成Google绑定")
     gen = email_generation_service.generate_email_from_draft(
-        subject=None,
-        brief_content="明天下午四点在102研讨室开一个代码评审会议",
+        subject="邀请参加讨论",
+        brief_content="邀请sakura参加11.23早上10:00-11:00的讨论，关于小组作业。地点在香港大学图书馆",
         tone="professional",
         recipient_name="s4kura",
-        sender_name=user.email,
-        purpose="会议邀请",
-        additional_context="需要准备进度报告"
+        sender_name=user.email
     )
-    subject = (gen.get("data") or {}).get("subject") or f"测试发送 {uuid.uuid4().hex[:6]}"
-    body = (gen.get("data") or {}).get("body") or "这是一封测试邮件"
+    subject = (gen.get("data") or {}).get("subject")
+    body = (gen.get("data") or {}).get("body")
     body_html = (gen.get("data") or {}).get("body_html")
     res = gmail.send_email(
         db=db,

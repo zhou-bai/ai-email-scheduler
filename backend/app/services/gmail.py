@@ -1,6 +1,8 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from typing import Any, Dict, List
 import email
+import html as _html
+import re
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -112,6 +114,25 @@ def _extract_body(payload: Dict[str, Any]) -> str:
     return ""
 
 
+def _text_to_html(s: str) -> str:
+    if not s:
+        return ""
+    t = s.replace("\r\n", "\n").replace("\r", "\n")
+    parts = re.split(r"\n\s*\n", t)
+    out = []
+    for p in parts:
+        if not p.strip():
+            continue
+        h = _html.escape(p).replace("\n", "<br>")
+        out.append(f"<p>{h}</p>")
+    body_html = "".join(out) if out else "<p></p>"
+    return (
+        "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head>"
+        "<body style=\"font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px;\">"
+        f"{body_html}"
+        "</body></html>"
+    ).strip()
+
 def send_email(
     db: Session, user_id: str, to_email: str, subject: str, 
     body: str, body_html: str = None, cc: str = None, bcc: str = None
@@ -151,12 +172,11 @@ def send_email(
         if bcc:
             mime_msg["Bcc"] = bcc
         
-        # 设置纯文本内容
         mime_msg.set_content(body)
-        
-        # 如果有HTML内容，添加为替代内容
         if body_html:
             mime_msg.add_alternative(body_html, subtype='html')
+        else:
+            mime_msg.add_alternative(_text_to_html(body), subtype='html')
         
         # 编码消息
         raw = urlsafe_b64encode(mime_msg.as_bytes()).decode("utf-8")
