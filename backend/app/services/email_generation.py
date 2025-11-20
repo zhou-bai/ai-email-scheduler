@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any
 import logging
+import re
 
 # 导入现有的LLM函数
 from LLM import generate_email as llm_generate_email
@@ -100,6 +101,7 @@ class EmailGenerationService:
             llm_data = result["data"]
             generated_subject = llm_data.get("subject", subject or "通知")
             generated_content = llm_data.get("content", "")
+            generated_content = EmailGenerationService._strip_markdown(generated_content)
             generated_content = EmailGenerationService._apply_signature(
                 generated_content,
                 sender_name=sender_name,
@@ -157,6 +159,29 @@ class EmailGenerationService:
         </html>
         """
         return html_doc.strip()
+
+    @staticmethod
+    def _strip_markdown(text: str) -> str:
+        if not text:
+            return text
+        s = text
+        s = re.sub(r"^```.*?$", "", s, flags=re.MULTILINE)
+        s = re.sub(r"`([^`]*)`", r"\1", s)
+        s = re.sub(r"!\[([^\]]*)\]\([^\)]+\)", r"\1", s)
+        s = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", s)
+        s = re.sub(r"^\s*#{1,6}\s+", "", s, flags=re.MULTILINE)
+        s = re.sub(r"^\s*>\s+", "", s, flags=re.MULTILINE)
+        s = re.sub(r"^\s*([-*_]){3,}\s*$", "", s, flags=re.MULTILINE)
+        s = re.sub(r"^\s*[-*+]\s+", "", s, flags=re.MULTILINE)
+        s = re.sub(r"^\s*\d+[\.\)]\s+", "", s, flags=re.MULTILINE)
+        s = re.sub(r"\*\*(.*?)\*\*", r"\1", s, flags=re.DOTALL)
+        s = re.sub(r"__(.*?)__", r"\1", s, flags=re.DOTALL)
+        s = re.sub(r"~~(.*?)~~", r"\1", s, flags=re.DOTALL)
+        s = re.sub(r"\*(\S(?:.*?\S)?)\*", r"\1", s, flags=re.DOTALL)
+        s = re.sub(r"_(\S(?:.*?\S)?)_", r"\1", s, flags=re.DOTALL)
+        s = re.sub(r"[ \t]+$", "", s, flags=re.MULTILINE)
+        s = re.sub(r"\n{3,}", "\n\n", s)
+        return s.strip()
 
     @staticmethod
     def _apply_signature(
