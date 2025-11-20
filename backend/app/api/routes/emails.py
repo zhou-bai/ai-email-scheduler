@@ -100,14 +100,16 @@ def delete_email_endpoint(
             detail="Access denied: you don't own this email",
         )
 
-    # Perform deletion
-    success = delete_email(db, email_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete email",
-        )
-    return {"success": True, "message": "Email deleted successfully"}
+    try:
+        success = delete_email(db, email_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Email not found or already deleted",
+            )
+        return {"success": True, "message": "Email deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/generate-and-send", response_model=EmailSendResponse)
@@ -147,7 +149,11 @@ def generate_and_send_email(
         subject=generate_request.subject,
         brief_content=generate_request.brief_content,
         tone=generate_request.tone,
-        recipient_name=(recipients[0].name if recipients else (direct_emails[0].split("@")[0] if direct_emails else None)),
+        recipient_name=(
+            recipients[0].name
+            if recipients
+            else (direct_emails[0].split("@")[0] if direct_emails else None)
+        ),
         sender_name=generate_request.sender_name or current_user.full_name,
         sender_position=generate_request.sender_position,
         sender_contact=generate_request.sender_contact,
@@ -163,7 +169,9 @@ def generate_and_send_email(
         }
 
     data = gen["data"]
-    to_emails = ",".join(direct_emails if direct_emails else [r.email for r in recipients])
+    to_emails = ",".join(
+        direct_emails if direct_emails else [r.email for r in recipients]
+    )
     res = gmail.send_email(
         db=db,
         user_id=str(current_user.id),
@@ -218,7 +226,11 @@ def generate_email(
         subject=generate_request.subject,
         brief_content=generate_request.brief_content,
         tone=generate_request.tone,
-        recipient_name=(recipients[0].name if recipients else (direct_emails[0].split("@")[0] if direct_emails else None)),
+        recipient_name=(
+            recipients[0].name
+            if recipients
+            else (direct_emails[0].split("@")[0] if direct_emails else None)
+        ),
         sender_name=generate_request.sender_name or current_user.full_name,
         sender_position=generate_request.sender_position,
         sender_contact=generate_request.sender_contact,
@@ -281,7 +293,9 @@ def send_email_endpoint(
     if not recipients and not direct_emails:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
-    to_emails = ",".join(direct_emails if direct_emails else [r.email for r in recipients])
+    to_emails = ",".join(
+        direct_emails if direct_emails else [r.email for r in recipients]
+    )
     res = gmail.send_email(
         db=db,
         user_id=str(current_user.id),

@@ -55,10 +55,24 @@ def update_email(db: Session, email_id: int, **kwargs) -> Optional[Email]:
 
 
 def delete_email(db: Session, email_id: int) -> bool:
-    """Delete email record"""
+    """Delete email record, but only if no calendar events are associated"""
+    from app.models.calendar import CalendarEvent
+
     db_email = get_email_by_id(db, email_id)
     if not db_email:
         return False
+
+    linked_events_count = (
+        db.query(CalendarEvent)
+        .filter(CalendarEvent.email_id == email_id)
+        .count()
+    )
+
+    if linked_events_count > 0:
+        raise ValueError(
+            f"Cannot delete email: {linked_events_count} calendar event(s) still linked. "
+            f"Delete all associated events first."
+        )
 
     db.delete(db_email)
     db.commit()
