@@ -134,6 +134,53 @@ class TestGenerateSendOnly(unittest.TestCase):
     def test_generate_only_with_identity(self):
         _run_generate_only_with_identity()
 
+    def test_generate_only_direct_email(self):
+        client = _make_client()
+        db = SessionLocal()
+        email = f"test-{uuid.uuid4().hex[:8]}@example.com"
+        user = get_or_create_user(db, email)
+        token = create_access_token(subject=str(user.id), additional_claims={"email": user.email, "role": user.role})
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+        payload = {
+            "to_email": "someone@example.com",
+            "brief_content": "邀请参加下周的项目讨论会议，讨论产品规划和时间安排",
+            "tone": "professional"
+        }
+        r = client.post("/api/v1/emails/generate", headers=headers, json=payload)
+        assert r.status_code == 200
+        body = r.json()
+        assert body.get("success") is True
+        print(f"用户输入的内容：{payload['brief_content']}")
+        print("AI生成的内容（直接邮箱）：")
+        print(f"主题：{body.get('subject')}")
+        print(f"正文：{body.get('body')}")
+
+    def test_send_only_direct_emails(self):
+        client = _make_client()
+        db = SessionLocal()
+        user_email = os.getenv("TEST_USER_EMAIL") or "kurasa907@gmail.com"
+        user = get_or_create_user(db, user_email)
+        token = get_latest_token(db, user.id)
+        if not token:
+            db.close()
+            pytest.skip("缺少OAuth令牌，请先完成Google绑定")
+        auth = create_access_token(subject=str(user.id), additional_claims={"email": user.email, "role": user.role})
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {auth}"}
+        payload = {
+            "to_emails": ["lovesakura2002@163.com", "hjq20021029@163.com"],
+            "subject": "仅发送测试-多人",
+            "body": "这是一封仅发送测试邮件（直接邮箱），用于验证发送接口",
+            "body_html": None
+        }
+        r = client.post("/api/v1/emails/send", headers=headers, json=payload)
+        assert r.status_code == 200
+        body = r.json()
+        assert body.get("success") is True
+        assert body.get("gmail_message_id")
+        assert body.get("thread_id")
+        db.close()
+
 
 def _suite(name):
     s = unittest.TestSuite()
