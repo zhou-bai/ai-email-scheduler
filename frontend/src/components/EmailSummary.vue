@@ -11,7 +11,7 @@
       </div>
       <div class="summary-footer">
         <el-tag v-if="summary.hasEvent" type="warning" size="small">
-          包含日程
+          Includes schedule
         </el-tag>
       </div>
     </div>

@@ -27,13 +27,13 @@
         <el-dropdown>
           <span class="el-dropdown-link">
             <el-avatar size="small" :icon="UserFilled" />
-            <span class="username"> 周</span>
+            <span class="username"> </span>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item>个人中心</el-dropdown-item>
+              <el-dropdown-item>Personal Center</el-dropdown-item>
               <el-dropdown-item divided @click="handleLogout">
-                退出登录
+                Log Out
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -100,55 +100,49 @@ body {
   min-height: 100vh;
 }
 
-/* 1. 顶部 Header 样式 (应用背景图) */
 .top-header {
   height: 60px;
   display: flex;
   align-items: center;
   padding: 0 20px;
 
-  /* --- 新增：添加背景图片 --- */
   background-image: url('/top-background.jpg');
   background-size: cover;
-  /* (让导航栏的背景图和页面背景图在顶部对齐) */
   background-position: center top; 
   background-repeat: no-repeat;
 
   border-bottom: 3px solid rgba(255, 255, 255, 0.853);
 }
 
-/* 2. Logo 样式 (字体改白) */
+
 .top-logo {
   width: 200px;
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff; /* <-- 改为白色 */
+  color: #ffffff;
   display: flex;
   align-items: center;
 }
 
-/* 3. 菜单样式 (背景透明，字体改白) */
 .top-menu {
   flex-grow: 1;
   border-bottom: none !important;
-  background-color: transparent !important; /* <-- 透明背景 */
+  background-color: transparent !important;
 }
-/* 覆盖 el-menu 的字体颜色 */
 .top-menu .el-menu-item {
-  color: #EAEAEA !important; /* <-- 浅白色 */
+  color: #EAEAEA !important;
   background-color: transparent !important;
 }
 /* 悬停/激活时 */
 .top-menu .el-menu-item:hover {
-  color: #ffffff !important; /* <-- 纯白 */
-  background-color: rgba(255, 255, 255, 0.1) !important; /* <-- 轻微提亮 */
+  color: #ffffff !important; 
+  background-color: rgba(255, 255, 255, 0.1) !important; 
 }
 .top-menu .el-menu-item.is-active {
-  color: #ffffff !important; /* <-- 纯白 */
-  border-bottom: 2px solid #ffffff !important; /* <-- 白色下划线 */
+  color: #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
 }
 
-/* 4. 用户信息 (字体改白) */
 .user-info {
   width: 200px;
   display: flex;
@@ -162,13 +156,12 @@ body {
 .user-info .username {
   margin-left: 8px;
   vertical-align: middle;
-  color: #ffffff; /* <-- 改为白色 */
+  color: #ffffff;
 }
 
-/* 5. 主内容区 (移除 padding) */
 .top-main-content {
   background-color: #f0f2f5;
-  padding: 0 !important; /* 保持为0，由子页面管理 */
+  padding: 0 !important;
 }
 
 .no-header-content {

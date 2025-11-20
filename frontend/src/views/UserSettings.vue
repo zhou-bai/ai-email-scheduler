@@ -3,10 +3,10 @@
     
     <el-page-header :icon="null">
       <template #title>
-        <strong>用户设置</strong>
+        <strong>User Settings</strong>
       </template>
       <template #content>
-        <span class="text-large font-600 mr-3"> 管理你的帐户信息和外部服务 </span>
+        <span class="text-large font-600 mr-3"> Manage your account information and external services </span>
       </template>
     </el-page-header>
 
@@ -14,32 +14,26 @@
 
     <el-card class="settings-container">
       
-      <el-divider content-position="left"><h3>帐户信息</h3></el-divider>
+      <el-divider content-position="left"><h3>Account Information</h3></el-divider>
       
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="用户名">
-          {{ user.name }} (你)
-        </el-descriptions-item>
-        <el-descriptions-item label="用户ID (来自提案)">
-          {{ user.id }}
-        </el-descriptions-item>
-        <el-descriptions-item label="团队角色">
-          {{ user.role }}
+        <el-descriptions-item label="User Name">
+          {{ user.name }} (You)
         </el-descriptions-item>
       </el-descriptions>
 
-      <el-divider content-position="left"><h3>服务集成</h3></el-divider>
+      <el-divider content-position="left"><h3>Service Integration</h3></el-divider>
       
       <div v-if="googleConnected" class="integration-status">
         <el-icon color="#67C23A" :size="20" style="vertical-align: middle; margin-right: 8px;">
           <SuccessFilled />
         </el-icon>
-        <strong>已连接到 Google Workspace (Gmail & Calendar)</strong>
+        <strong>Connected to Google Workspace (Gmail & Calendar)</strong>
         <p class="status-desc">
-          代理正在主动为你读取邮件和同步日历。
+          The agent is proactively reading your emails and syncing your calendar.
         </p>
         <el-button type="danger" @click="disconnectGoogle">
-          断开连接
+          Disconnect
         </el-button>
       </div>
 
@@ -47,12 +41,12 @@
         <el-icon color="#F56C6C" :size="20" style="vertical-align: middle; margin-right: 8px;">
           <WarningFilled />
         </el-icon>
-        <strong>未连接到 Google Workspace</strong>
+        <strong>Not connected to Google Workspace</strong>
         <p class="status-desc">
-          你需要授权访问你的 Gmail 和 Google 日历，以便 AI 代理为你工作。
+          You need to grant access to your Gmail and Google Calendar so that the AI ​​agent can work for you.
         </p>
         <el-button type="primary" @click="connectGoogle">
-          连接 Google 帐户 (模拟)
+          Connect your Google account
         </el-button>
       </div>
 

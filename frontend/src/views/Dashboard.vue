@@ -2,14 +2,14 @@
   <div class="dashboard">
     <el-page-header :icon="null">
       <template #title>
-        <strong>仪表盘</strong>
+        <strong>Dashboard</strong>
       </template>
       <template #content>
-        <span class="text-large font-600 mr-3"> AI 助手活动中心 </span>
+        <span class="text-large font-600 mr-3"> AI Assistant Activity Center </span>
       </template>
       <template #extra>
       <el-button type="warning" @click="connectGoogle">
-        <el-icon><Link /></el-icon> 连接 Google 账号
+        <el-icon><Link /></el-icon> Connect your Google account
       </el-button>
       
       <el-button type="primary" :icon="Refresh" circle @click="handleRefresh" />
@@ -23,11 +23,11 @@
         <template #label>
           <span class="tab-label">
             <el-icon><Message /></el-icon>
-            <span>邮件摘要</span>
+            <span>Email Summary</span>
             <el-badge :value="emailSummaries.length" class="tab-badge" />
           </span>
         </template>
-        <el-empty v-if="emailSummaries.length === 0" description="暂无邮件数据" :image-size="100" />
+        <el-empty v-if="emailSummaries.length === 0" description="No email data available." :image-size="100" />
         <div v-else class="summary-list-container">
           <EmailSummary v-for="summary in emailSummaries" :key="summary.id" :summary="summary" />
         </div>
@@ -37,12 +37,12 @@
         <template #label>
           <span class="tab-label">
             <el-icon><Calendar /></el-icon>
-            <span>待办事件</span>
+            <span>To-do</span>
             <el-badge :value="pendingEvents.length" type="warning" class="tab-badge" />
           </span>
         </template>
         
-        <el-empty v-if="pendingEvents.length === 0" description="暂无待办事件" :image-size="100" />
+        <el-empty v-if="pendingEvents.length === 0" description="No pending events" :image-size="100" />
 
         <div v-else class="event-list-container">
           <el-row :gutter="20">
@@ -65,7 +65,7 @@
         <template #label>
           <span class="tab-label">
             <el-icon><EditPen /></el-icon>
-            <span>生成邮件</span>
+            <span>Generate email</span>
           </span>
         </template>
 

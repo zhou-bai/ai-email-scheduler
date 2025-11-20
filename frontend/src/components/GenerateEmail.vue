@@ -6,8 +6,8 @@
           <template #header>
             <div class="card-header">
               <div>
-                <h3>AI 智能写邮件</h3>
-                <p>补充关键信息，AI 将自动生成完整邮件内容。</p>
+                <h3>AI-powered intelligent email composition</h3>
+                <p>Add key information, and AI will automatically generate the complete email content.</p>
               </div>
             </div>
           </template>
@@ -21,40 +21,40 @@
           >
             <el-row :gutter="16">
               <el-col :xs="24" :sm="16">
-                <el-form-item label="邮件主题" prop="subject">
-                  <el-input v-model="form.subject" placeholder="请输入邮件主题" />
+                <el-form-item label="Email Subject" prop="subject">
+                  <el-input v-model="form.subject" placeholder="Please enter the email subject." />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-form-item label="语气风格" prop="tone">
+                <el-form-item label="Tone" prop="tone">
                   <el-select v-model="form.tone" placeholder="选择语气">
-                    <el-option label="专业" value="professional" />
-                    <el-option label="正式" value="formal" />
-                    <el-option label="友好" value="friendly" />
-                    <el-option label="轻松" value="casual" />
+                    <el-option label="Professional" value="professional" />
+                    <el-option label="Formal" value="formal" />
+                    <el-option label="Friendly" value="friendly" />
+                    <el-option label="Casual" value="casual" />
                   </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
 
-            <el-form-item label="内容概述" prop="brief_content">
+            <el-form-item label="Content Overview" prop="brief_content">
               <el-input
                 v-model="form.brief_content"
                 type="textarea"
                 :autosize="{ minRows: 4, maxRows: 8 }"
-                placeholder="描述邮件目的、关键信息、时间、参与者等"
+                placeholder="Describe the purpose of the email, key information, time, participants, etc."
               />
             </el-form-item>
 
             <el-row :gutter="16">
               <el-col :xs="24">
                 <el-form-item
-                  label="收件人邮箱（多个请用英文逗号分隔）"
+                  label="Recipient's email address (separate multiple email addresses with commas)."
                   prop="to_emails_input"
                 >
                   <el-input
                     v-model="form.to_emails_input"
-                    placeholder="例如：client@example.com, boss@company.com"
+                    placeholder="client@example.com, boss@company.com"
                     clearable
                   />
                 </el-form-item>
@@ -63,15 +63,15 @@
 
             <el-row :gutter="16">
               <el-col :xs="24" :sm="12">
-                <el-form-item label="邮件目的" prop="purpose">
-                  <el-input v-model="form.purpose" placeholder="说明邮件目标（可选）" />
+                <el-form-item label="Purpose" prop="purpose">
+                  <el-input v-model="form.purpose" placeholder="Specify the email target (optional)" />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="12">
-                <el-form-item label="补充背景" prop="additional_context">
+                <el-form-item label="Additional Background" prop="additional_context">
                   <el-input
                     v-model="form.additional_context"
-                    placeholder="补充背景信息（可选）"
+                    placeholder="Additional background information (optional)"
                   />
                 </el-form-item>
               </el-col>
@@ -79,18 +79,18 @@
 
             <el-row :gutter="16">
               <el-col :xs="24" :sm="8">
-                <el-form-item label="发件人姓名" prop="sender_name">
-                  <el-input v-model="form.sender_name" placeholder="例如：Alex Chen" />
+                <el-form-item label="Sender Name" prop="sender_name">
+                  <el-input v-model="form.sender_name" placeholder="Alex Chen" />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-form-item label="发件人身份" prop="sender_position">
-                  <el-input v-model="form.sender_position" placeholder="例如：产品经理" />
+                <el-form-item label="Sender Position" prop="sender_position">
+                  <el-input v-model="form.sender_position" placeholder="Product Manager" />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-form-item label="发件人联系方式" prop="sender_contact">
-                  <el-input v-model="form.sender_contact" placeholder="例如：alex@example.com" />
+                <el-form-item label="Sender's contact information" prop="sender_contact">
+                  <el-input v-model="form.sender_contact" placeholder="alex@example.com" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -103,7 +103,7 @@
               >
                 {{ primaryButtonText }}
               </el-button>
-              <el-button @click="handleReset">重置</el-button>
+              <el-button @click="handleReset">Reset</el-button>
             </div>
           </el-form>
         </el-card>
@@ -115,21 +115,21 @@
             <template #header>
               <div class="result-header">
                 <div>
-                  <h3>生成结果</h3>
-                  <p>查看并调整自动生成的主题与正文。</p>
+                  <h3>Generate Results</h3>
+                  <p>View and adjust the automatically generated theme and body text.</p>
                 </div>
-                <el-button text type="primary" @click="copyResult">复制内容</el-button>
+                <el-button text type="primary" @click="copyResult">Copy content</el-button>
               </div>
             </template>
 
             <div class="result-body">
-              <p class="result-label">主题</p>
+              <p class="result-label">Subject</p>
               <el-input
                 v-model="result.subject"
-                placeholder="可编辑生成的主题"
+                placeholder="Editable generated subject"
               />
 
-              <p class="result-label">正文</p>
+              <p class="result-label">Content</p>
               <el-input
                 v-model="result.content"
                 type="textarea"
@@ -138,7 +138,7 @@
             </div>
           </el-card>
         </transition>
-        <el-empty v-else description="生成结果将显示在此处" class="result-placeholder" />
+        <el-empty v-else description="The generated results will be displayed here." class="result-placeholder" />
       </el-col>
     </el-row>
   </div>
@@ -167,13 +167,13 @@ const form = reactive({
 })
 
 const rules = {
-  to_emails_input: [{ required: true, message: '请输入至少一个收件人邮箱', trigger: 'blur' }],
-  subject: [{ required: true, message: '请输入邮件主题', trigger: 'blur' }],
+  to_emails_input: [{ required: true, message: 'Please enter at least one recipients email address.', trigger: 'blur' }],
+  subject: [{ required: true, message: 'Please enter the email subject.', trigger: 'blur' }],
   brief_content: [
-    { required: true, message: '请填写内容概述', trigger: 'blur' },
+    { required: true, message: 'Please fill in a summary of the content.', trigger: 'blur' },
     {
       min: 5,
-      message: '内容概述至少 5 个字符',
+      message: 'Content summary (at least 5 characters)',
       trigger: 'blur'
     }
   ]
@@ -215,16 +215,16 @@ const handleCompose = () => {
       const { data } = await generateEmail(payload)
       responseText.value = JSON.stringify(data, null, 2)
       if (!data?.success) {
-        throw new Error(data?.message || '生成失败')
+        throw new Error(data?.message || 'Generation failed')
       }
       result.value = {
         subject: data.subject || form.subject,
         // 后端返回字段为 body，为了兼容性，建议同时尝试读取 body 和 content
         content: data.body || data.content || '' 
       }
-      ElMessage.success('邮件生成成功')
+      ElMessage.success('Email generated successfully')
     } catch (error) {
-      const message = error?.message || '生成邮件失败'
+      const message = error?.message || 'Email generation failed'
       responseText.value = message
       ElMessage.error(message)
     } finally {
@@ -247,7 +247,7 @@ const isSendReady = computed(() => {
 })
 
 const primaryButtonText = computed(() =>
-  isSendReady.value ? '发送邮件' : '生成邮件'
+  isSendReady.value ? 'Send email' : 'Generate email'
 )
 
 const handlePrimaryAction = () => {
@@ -260,7 +260,7 @@ const handlePrimaryAction = () => {
 
 const handleSend = async () => {
   if (!isSendReady.value) {
-    ElMessage.warning('请先生成邮件内容')
+    ElMessage.warning('Please generate the email content first.')
     return
   }
 
@@ -277,9 +277,9 @@ const handleSend = async () => {
     
     const { data } = await sendEmail(payload)
     responseText.value = JSON.stringify(data, null, 2)
-    ElMessage.success('邮件发送成功')
+    ElMessage.success('Email sent successfully')
   } catch (error) {
-    const message = error?.message || '发送邮件失败'
+    const message = error?.message || 'Email failed to send'
     responseText.value = message
     ElMessage.error(message)
   } finally {
@@ -291,11 +291,11 @@ const copyResult = async () => {
   if (!result.value?.content) return
   try {
     await navigator.clipboard.writeText(
-      `主题：${result.value.subject || ''}\n\n${result.value.content}`
+      `Subject：${result.value.subject || ''}\n\n${result.value.content}`
     )
-    ElMessage.success('已复制到剪贴板')
+    ElMessage.success('Copy to clipboard')
   } catch {
-    ElMessage.warning('复制失败，请手动复制')
+    ElMessage.warning('Copying failed, please copy manually.')
   }
 }
 </script>

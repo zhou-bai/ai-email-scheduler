@@ -10,25 +10,25 @@
           :loading="loading"
           @click="handleConfirm"
         >
-          确认并同步
+          Confirm and synchronize
         </el-button>
       </div>
     </template>
 
     <el-descriptions :column="1" border>
-      <el-descriptions-item label="日期">
+      <el-descriptions-item label="Date">
         <el-tag>{{ event.date }}</el-tag>
       </el-descriptions-item>
       
-      <el-descriptions-item label="时间">
+      <el-descriptions-item label="Time">
         {{ event.time }}
       </el-descriptions-item>
 
-      <el-descriptions-item label="地点">
+      <el-descriptions-item label="Location">
         {{ event.location }}
       </el-descriptions-item>
 
-      <el-descriptions-item label="参会者">
+      <el-descriptions-item label="Participants">
         <el-tag 
           v-for="(person, index) in event.attendees" 
           :key="index" 
