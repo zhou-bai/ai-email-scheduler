@@ -53,18 +53,7 @@ def process_unread_emails(
         is_spam = bool(data.get("is_spam"))
         judge_reason = data.get("judge_reason") or ""
         is_schedule = bool(data.get("is_schedule"))
-        event_name = data.get("event") or None
-        start_time = data.get("start_time")
-        end_time = data.get("end_time")
-        location = data.get("location") or None
-        participants_info = data.get("participants") or ""
-        participants_list: List[str] = [p.strip() for p in participants_info.split(",") if p.strip()]
-        emails: List[str] = []
-        for item in participants_list:
-            emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", item))
-        seen: set[str] = set()
-        valid_emails = [e for e in emails if not (e in seen or seen.add(e))]
-        attendee_emails = ",".join(valid_emails) or None
+        events = data.get("events", [])
 
         if is_spam:
             logger.info(
@@ -98,56 +87,73 @@ def process_unread_emails(
         db_email = create_email(db, email_create)
         processed += 1
 
-        if is_schedule and start_time:
-            if not end_time:
-                end_time = start_time + timedelta(hours=1)
-                logger.debug(
-                    "Email %s: end_time missing, defaulted to %s",
-                    email_id,
-                    end_time.isoformat(),
-                )
+        if is_schedule and events:
+            for event in events:
+                event_name = event.get("event_name") or email_data.get("subject") or "Meeting"
+                start_time = event.get("start_time")
+                end_time = event.get("end_time")
+                location = event.get("location") or None
+                participants_info = event.get("participants") or ""
 
-            summary = event_name or email_data.get("subject") or "Meeting"
-            try:
-                description_text = (
-                    f"From: {email_data.get('from')}\n"
-                    f"Subject: {email_data.get('subject')}\n"
-                    f"Summary: {judge_reason}\n"
-                    f"Location: {location or 'None'}\n"
-                    f"Participants: {participants_info or 'None'}"
-                )
-                calendar_event_data = CalendarEventCreate(
-                    user_id=user_id,
-                    email_id=db_email.id,
-                    summary=summary,
-                    description=description_text,
-                    start_time=start_time,
-                    end_time=end_time,
-                    location=location,
-                    attendees=attendee_emails,
-                )
-                db_event = create_calendar_event(db, calendar_event_data)
-                created_events += 1
-                logger.info(
-                    "Stored local calendar event from email %s -> db_id=%s",
-                    email_id,
-                    db_event.id,
-                )
-            except Exception as ce:  # noqa: BLE001
-                logger.error(
-                    "Failed to store local calendar event from email %s: %s",
-                    email_id,
-                    ce,
-                    exc_info=True,
-                )
+                if not start_time:
+                    logger.debug("Event '%s' has no start_time, skipping", event_name)
+                    continue
+
+                if not end_time:
+                    end_time = start_time + timedelta(hours=1)
+                    logger.debug("Event '%s': end_time missing, defaulted to %s", event_name, end_time.isoformat())
+
+                participants_list: List[str] = [p.strip() for p in participants_info.split(",") if p.strip()]
+                emails: List[str] = []
+                for item in participants_list:
+                    emails.extend(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", item))
+                seen: set[str] = set()
+                valid_emails = [e for e in emails if not (e in seen or seen.add(e))]
+                attendee_emails = ",".join(valid_emails) or None
+
+                try:
+                    description_text = (
+                        f"From: {email_data.get('from')}\n"
+                        f"Subject: {email_data.get('subject')}\n"
+                        f"Summary: {judge_reason}\n"
+                        f"Location: {location or 'None'}\n"
+                        f"Participants: {participants_info or 'None'}"
+                    )
+                    calendar_event_data = CalendarEventCreate(
+                        user_id=user_id,
+                        email_id=db_email.id,
+                        summary=event_name,
+                        description=description_text,
+                        start_time=start_time,
+                        end_time=end_time,
+                        location=location,
+                        attendees=attendee_emails,
+                    )
+                    db_event = create_calendar_event(db, calendar_event_data)
+                    created_events += 1
+                    logger.info(
+                        "Stored calendar event '%s' from email %s -> db_id=%s",
+                        event_name,
+                        email_id,
+                        db_event.id,
+                    )
+                except Exception as ce:  # noqa: BLE001
+                    logger.error(
+                        "Failed to store calendar event '%s' from email %s: %s",
+                        event_name,
+                        email_id,
+                        ce,
+                        exc_info=True,
+                    )
         else:
             logger.debug(
-                "Email %s: no schedulable event detected (is_schedule=%s)",
+                "Email %s: no schedulable events detected (is_schedule=%s, events_count=%d)",
                 email_id,
                 is_schedule,
+                len(events),
             )
 
-        logger.info("Processed email %s: schedule=%s", email_id, is_schedule)
+        logger.info("Processed email %s: schedule=%s, events_created=%d", email_id, is_schedule, created_events)
 
     message = f"Successfully processed {processed} emails, created {created_events} calendar events"
     return processed, created_events, message
