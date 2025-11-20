@@ -117,7 +117,12 @@ def generate_and_send_email(
     current_user: User = Depends(get_current_user),
 ):
     recipients: list[EmailRecipient] = []
-    if generate_request.recipient_ids:
+    direct_emails: list[str] = []
+    if generate_request.to_emails and len(generate_request.to_emails) > 0:
+        direct_emails = [str(e) for e in generate_request.to_emails]
+    elif generate_request.to_email:
+        direct_emails = [str(generate_request.to_email)]
+    elif generate_request.recipient_ids:
         recipients = (
             db.query(EmailRecipient)
             .filter(EmailRecipient.user_id == current_user.id)
@@ -135,14 +140,14 @@ def generate_and_send_email(
         )
         if r:
             recipients = [r]
-    if not recipients:
+    if not recipients and not direct_emails:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
     gen = email_generation_service.generate_email_from_draft(
         subject=generate_request.subject,
         brief_content=generate_request.brief_content,
         tone=generate_request.tone,
-        recipient_name=(recipients[0].name if recipients else None),
+        recipient_name=(recipients[0].name if recipients else (direct_emails[0].split("@")[0] if direct_emails else None)),
         sender_name=generate_request.sender_name or current_user.full_name,
         sender_position=generate_request.sender_position,
         sender_contact=generate_request.sender_contact,
@@ -158,7 +163,7 @@ def generate_and_send_email(
         }
 
     data = gen["data"]
-    to_emails = ",".join([r.email for r in recipients])
+    to_emails = ",".join(direct_emails if direct_emails else [r.email for r in recipients])
     res = gmail.send_email(
         db=db,
         user_id=str(current_user.id),
@@ -183,7 +188,12 @@ def generate_email(
     current_user: User = Depends(get_current_user),
 ):
     recipients: list[EmailRecipient] = []
-    if generate_request.recipient_ids:
+    direct_emails: list[str] = []
+    if generate_request.to_emails and len(generate_request.to_emails) > 0:
+        direct_emails = [str(e) for e in generate_request.to_emails]
+    elif generate_request.to_email:
+        direct_emails = [str(generate_request.to_email)]
+    elif generate_request.recipient_ids:
         recipients = (
             db.query(EmailRecipient)
             .filter(EmailRecipient.user_id == current_user.id)
@@ -201,14 +211,14 @@ def generate_email(
         )
         if r:
             recipients = [r]
-    if not recipients:
+    if not recipients and not direct_emails:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
     gen = email_generation_service.generate_email_from_draft(
         subject=generate_request.subject,
         brief_content=generate_request.brief_content,
         tone=generate_request.tone,
-        recipient_name=(recipients[0].name if recipients else None),
+        recipient_name=(recipients[0].name if recipients else (direct_emails[0].split("@")[0] if direct_emails else None)),
         sender_name=generate_request.sender_name or current_user.full_name,
         sender_position=generate_request.sender_position,
         sender_contact=generate_request.sender_contact,
@@ -245,7 +255,12 @@ def send_email_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     recipients: list[EmailRecipient] = []
-    if send_request.recipient_ids:
+    direct_emails: list[str] = []
+    if send_request.to_emails and len(send_request.to_emails) > 0:
+        direct_emails = [str(e) for e in send_request.to_emails]
+    elif send_request.to_email:
+        direct_emails = [str(send_request.to_email)]
+    elif send_request.recipient_ids:
         recipients = (
             db.query(EmailRecipient)
             .filter(EmailRecipient.user_id == current_user.id)
@@ -263,10 +278,10 @@ def send_email_endpoint(
         )
         if r:
             recipients = [r]
-    if not recipients:
+    if not recipients and not direct_emails:
         raise HTTPException(status_code=404, detail="Recipient not found")
 
-    to_emails = ",".join([r.email for r in recipients])
+    to_emails = ",".join(direct_emails if direct_emails else [r.email for r in recipients])
     res = gmail.send_email(
         db=db,
         user_id=str(current_user.id),

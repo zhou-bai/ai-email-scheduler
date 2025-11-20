@@ -1,13 +1,21 @@
 from pathlib import Path
-from dotenv import load_dotenv
 import warnings
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+except Exception:
+    pass
 
 import pytest
 from fastapi.testclient import TestClient
 
-import main as main
+try:
+    import main as main  # type: ignore
+except ModuleNotFoundError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import main as main  # type: ignore
 
 try:
     from app.infrastructure.token_store import TokenStore  # type: ignore
@@ -29,6 +37,7 @@ except Exception:  # pragma: no cover
             return self._tokens.get(user_id)
 
 warnings.filterwarnings("ignore", message="Do not expect file_or_dir in Namespace")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*co_lnotab is deprecated.*")
 
 
 @pytest.fixture

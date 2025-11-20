@@ -40,6 +40,8 @@ class EmailGenerateRequest(BaseModel):
     """邮件生成请求"""
     recipient_id: Optional[int] = Field(None, description="单个收件人ID")
     recipient_ids: Optional[List[int]] = Field(None, description="多个收件人ID")
+    to_email: Optional[EmailStr] = Field(None, description="直接指定单个收件人邮箱")
+    to_emails: Optional[List[EmailStr]] = Field(None, description="直接指定多个收件人邮箱")
     subject: Optional[str] = Field(None, description="邮件主题，可省略让系统自动生成")
     brief_content: str = Field(..., description="用户输入的简要内容")
     tone: str = Field("professional", description="邮件语气：professional, friendly, formal, casual")
@@ -65,6 +67,8 @@ class EmailSendRequest(BaseModel):
     """邮件发送请求"""
     recipient_id: Optional[int] = Field(None, description="单个收件人ID")
     recipient_ids: Optional[List[int]] = Field(None, description="多个收件人ID")
+    to_email: Optional[EmailStr] = Field(None, description="直接指定单个收件人邮箱")
+    to_emails: Optional[List[EmailStr]] = Field(None, description="直接指定多个收件人邮箱")
     subject: str = Field(..., min_length=1, max_length=500, description="邮件主题")
     body: str = Field(..., description="邮件正文")
     body_html: Optional[str] = Field(None, description="HTML格式的邮件正文")
