@@ -95,7 +95,7 @@ def process_unread_emails(
             snippet=judge_reason[:500] if judge_reason else email_data.get("snippet"),
             body_text=email_data.get("body_text"),
         )
-        create_email(db, email_create)
+        db_email = create_email(db, email_create)
         processed += 1
 
         if is_schedule and start_time:
@@ -108,7 +108,6 @@ def process_unread_emails(
                 )
 
             summary = event_name or email_data.get("subject") or "Meeting"
-            # insert to local calendar
             try:
                 description_text = (
                     f"From: {email_data.get('from')}\n"
@@ -119,6 +118,7 @@ def process_unread_emails(
                 )
                 calendar_event_data = CalendarEventCreate(
                     user_id=user_id,
+                    email_id=db_email.id,
                     summary=summary,
                     description=description_text,
                     start_time=start_time,

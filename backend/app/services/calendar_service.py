@@ -3,6 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.calendar import CalendarEvent
+from app.models.email import Email
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate
 
 
@@ -52,10 +53,15 @@ def update_calendar_event(
 
 
 def delete_calendar_event(db: Session, event_id: int) -> bool:
-    """Delete calendar event record"""
+    """Delete calendar event record and associated email if exists"""
     db_event = get_calendar_event_by_id(db, event_id)
     if not db_event:
         return False
+
+    if db_event.email_id:
+        db_email = db.query(Email).filter(Email.id == db_event.email_id).first()
+        if db_email:
+            db.delete(db_email)
 
     db.delete(db_event)
     db.commit()

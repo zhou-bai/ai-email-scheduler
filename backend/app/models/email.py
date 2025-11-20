@@ -10,6 +10,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.calendar import CalendarEvent
 
 
 class Email(Base):
@@ -39,6 +40,7 @@ class Email(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="emails")
+    calendar_event: Mapped["CalendarEvent | None"] = relationship(back_populates="email")
 
     def __repr__(self):
         return f"<Email(id={self.id}, email_id='{self.email_id}', subject='{self.subject}')>"

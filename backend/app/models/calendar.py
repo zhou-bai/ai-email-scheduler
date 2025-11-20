@@ -10,6 +10,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.email import Email
 
 
 class CalendarEvent(Base):
@@ -17,6 +18,11 @@ class CalendarEvent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    email_id: Mapped[int | None] = mapped_column(
+        ForeignKey("emails.id", ondelete="SET NULL"),
+        index=True,
+        default=None
+    )
 
     summary: Mapped[str] = mapped_column(String(255))
     location: Mapped[str | None] = mapped_column(String(255), default=None)
@@ -34,6 +40,7 @@ class CalendarEvent(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="calendar_events")
+    email: Mapped["Email | None"] = relationship(back_populates="calendar_event")
 
     def __repr__(self):
         return f"<CalendarEvent(id={self.id}, summary='{self.summary}', start_time={self.start_time})>"

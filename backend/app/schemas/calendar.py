@@ -15,6 +15,7 @@ class CalendarEventBase(BaseModel):
 
 class CalendarEventCreate(CalendarEventBase):
     user_id: int
+    email_id: Optional[int] = None
 
 
 class CalendarEventUpdate(BaseModel):
@@ -29,6 +30,7 @@ class CalendarEventUpdate(BaseModel):
 class CalendarEventResponse(CalendarEventBase):
     id: int
     user_id: int
+    email_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
