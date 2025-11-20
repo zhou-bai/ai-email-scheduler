@@ -33,7 +33,20 @@ def analyze_email(email_content, sender=None, subject=None, recipients=None):
       message?: string
     }
     """
-    system_prompt = """You are a professional email management assistant. Analyze emails and return structured JSON output.
+    # Get current date and time information
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M")
+    day_of_week = now.strftime("%A")  # Monday, Tuesday, etc.
+    
+    system_prompt = f"""You are a professional email management assistant. Analyze emails and return structured JSON output.
+
+Current Date and Time Information:
+- Date: {current_date}
+- Time: {current_time}
+- Day of Week: {day_of_week}
+
+Use this information to accurately interpret relative dates like "today", "tomorrow", "next week", etc.
 
 Tasks:
 1. Detect spam/advertisements
