@@ -4,7 +4,7 @@ import axios from 'axios'
 // 1. 创建实例 (baseURL 留空或写 /api/v1 均可，这里留空配合 proxy)
 const request = axios.create({
   baseURL: '', 
-  timeout: 10000
+  timeout: 30000  // 延长到 30 秒，适配 LLM 多事件分析场景
   // 注意：这里不再写死 headers
 })
 

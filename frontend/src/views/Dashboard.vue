@@ -166,9 +166,22 @@ const handleRefresh = async () => {
   }
 }
 
-// 当用户在 EventCard 点击确认后，前端直接把该条目移除，无需刷新整个列表
-const removeEventFromList = (id) => {
+const removeEventFromList = async (id) => {
   pendingEvents.value = pendingEvents.value.filter(e => e.id !== id)
+
+  try {
+    const emailRes = await getEmails({ limit: 20 })
+    emailSummaries.value = emailRes.data.map(item => ({
+      id: item.id,
+      sender: item.from_address,
+      subject: item.subject,
+      summary: item.snippet || item.body_text,
+      receivedAt: item.received_at,
+      hasEvent: false
+    }))
+  } catch (error) {
+    console.error('刷新邮件列表失败:', error)
+  }
 }
 
 const handleDeleteEmail = async (emailId) => {
