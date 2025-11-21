@@ -42,13 +42,13 @@ onMounted(() => {
     if (userId) localStorage.setItem('user_id', userId)
     if (email) localStorage.setItem('user_email', email)
 
-    ElMessage.success('Google 账号连接成功！')
+    ElMessage.success('Google connect successful!')
     
     // 跳转回首页
     router.push('/')
   } else {
     console.error('未找到 Token。Hash:', route.hash, 'Query:', route.query)
-    ElMessage.error('授权失败：未收到 Token')
+    ElMessage.error('Google connect failed: No token found.')
     // 建议注释掉下面这行，留在当前页方便看 Console 里的报错信息
     // router.push('/login') 
   }
