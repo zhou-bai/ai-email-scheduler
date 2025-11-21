@@ -1,6 +1,8 @@
-from openai import OpenAI
-from datetime import datetime, timedelta
 import json
+import re
+from datetime import datetime, timedelta
+
+from openai import OpenAI
 
 # 初始化OpenAI客户端
 client = OpenAI(
@@ -38,16 +40,15 @@ def analyze_email(email_content, sender=None, subject=None, recipients=None):
     current_date = now.strftime("%Y-%m-%d")
     current_time = now.strftime("%H:%M")
     day_of_week = now.strftime("%A")  # Monday, Tuesday, etc.
-    
-    system_prompt = f"""You are a professional email management assistant. Analyze emails and return structured JSON output.
 
-Current Date and Time Information:
+    date_context = f"""Current Date and Time Information:
 - Date: {current_date}
 - Time: {current_time}
 - Day of Week: {day_of_week}
 
-Use this information to accurately interpret relative dates like "today", "tomorrow", "next week", etc.
+Use this information to accurately interpret relative dates like "today", "tomorrow", "next week", etc."""
 
+    task_description = """
 Tasks:
 1. Detect spam/advertisements
 2. Provide email summary (or spam detection reason if spam)
@@ -81,6 +82,12 @@ Rules:
 - Time format: "HH:MM" (24-hour)
 - Empty fields: use empty string "", NOT null or "None"
 - Multiple events: list all in the events array"""
+
+    system_prompt = (
+        "You are a professional email management assistant. Analyze emails and return structured JSON output.\n\n"
+        + date_context
+        + task_description
+    )
 
     # Build user message
     user_message = "Please analyze the following email:\n"
@@ -138,20 +145,40 @@ def generate_email(
       message?: string;         // 错误信息
     }
     """
-    # Build system prompt for email generation
-    system_prompt = """You are a professional email writing assistant. Your task is to generate a complete email based on brief information provided by the user.
+    # Get current date and time information
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M")
+    day_of_week = now.strftime("%A")  # Monday, Tuesday, etc.
 
-    Requirements:
-    1. Generate a clear and appropriate email subject
-    2. Write a complete, well-structured email body
-    3. Adapt the tone based on the user's requirement (professional, casual, formal, etc.)
-    4. Include appropriate greetings and closing
-    5. Make the email coherent and easy to understand
-    
-    Please respond in the following format:
-    【Email Subject】：Generated email subject
-    【Email Content】：Complete email content with proper formatting
-    """
+    # ============================================================
+    # 构建邮件生成提示词：动态部分 + 静态部分
+    # ============================================================
+    date_context = f"""Current Date and Time Information:
+- Date: {current_date}
+- Time: {current_time}
+- Day of Week: {day_of_week}
+
+Use this information when the user mentions relative dates like "today", "tomorrow", "next week", etc."""
+
+    task_requirements = """
+Requirements:
+1. Generate a clear and appropriate email subject
+2. Write a complete, well-structured email body
+3. Adapt the tone based on the user's requirement (professional, casual, formal, etc.)
+4. Include appropriate greetings and closing
+5. Make the email coherent and easy to understand
+
+Please respond in the following format:
+【Email Subject】：Generated email subject
+【Email Content】：Complete email content with proper formatting"""
+
+    system_prompt = (
+        "You are a professional email writing assistant. Your task is to generate a complete email based on brief information provided by the user.\n\n"
+        + date_context
+        + "\n"
+        + task_requirements
+    )
 
     # Build user message
     user_message = f"Please generate an email based on the following information:\n"
@@ -184,7 +211,18 @@ def generate_email(
 def parse_json_response(response_text):
     """Parse JSON response from DeepSeek API and convert to internal format"""
     try:
-        data = json.loads(response_text)
+        text = response_text.strip()
+
+        # 尝试直接解析
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            # 如果失败，尝试提取 JSON 块（匹配第一个 { 到最后一个 }）
+            json_match = re.search(r"\{.*\}", text, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+            else:
+                raise ValueError("No valid JSON found in response")
 
         is_spam = data.get("is_spam", False)
         summary = data.get("summary", "")
