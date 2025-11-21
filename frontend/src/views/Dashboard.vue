@@ -144,8 +144,8 @@ const fetchData = async () => {
     })
 
   } catch (error) {
-    console.error('数据加载失败:', error)
-    ElMessage.error('获取数据失败')
+    console.error('Failed to load data:', error)
+    ElMessage.error('Failed to fetch data')
   }
 }
 
@@ -154,13 +154,13 @@ const handleRefresh = async () => {
   try {
     const res = await processEmails() // 触发 AI 分析
     if (res.data.success) {
-      ElMessage.success(`分析完成，生成了 ${res.data.created_events_count} 个新事件`)
+      ElMessage.success(`分析完成，生成了 ${res.data.created_events_count} new events`)
       await fetchData() // 重新拉取最新数据
     } else {
-      ElMessage.warning('处理未完全成功')
+      ElMessage.warning('Processing not completely successful')
     }
   } catch (error) {
-    ElMessage.error('刷新失败')
+    ElMessage.error('Refresh failed')
   } finally {
     loading.value = false
   }
@@ -220,7 +220,7 @@ const connectGoogle = async () => {
     window.location.href = authUrl
   } catch (error) {
     console.error('无法获取授权链接', error)
-    ElMessage.error('无法连接至 Google')
+    ElMessage.error('Fail to connect to Google')
   }
 }
 
