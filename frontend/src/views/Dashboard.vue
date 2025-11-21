@@ -154,7 +154,7 @@ const handleRefresh = async () => {
   try {
     const res = await processEmails() // 触发 AI 分析
     if (res.data.success) {
-      ElMessage.success(`分析完成，生成了 ${res.data.created_events_count} new events`)
+      ElMessage.success(`Analysis complete, created ${res.data.created_events_count} new events`)
       await fetchData() // 重新拉取最新数据
     } else {
       ElMessage.warning('Processing not completely successful')
